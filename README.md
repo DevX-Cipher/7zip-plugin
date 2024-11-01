@@ -1,6 +1,6 @@
 # UnpackPyInstaller
 
-![7-Zip Required](https://img.shields.io/badge/required-7%2DZip-blue.svg)
+
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## Description
