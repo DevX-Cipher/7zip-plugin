@@ -222,7 +222,7 @@ namespace NArchive {
                 }
 
                 RINOK(extractCallback->PrepareOperation(askMode));
-
+#ifdef _DEBUG
                 std::wstringstream debugMsg;
                 debugMsg << L"[Debug] Extracting file index " << index << L":\n"
                     << L"  Name: " << item.name.c_str() << L"\n"
@@ -240,19 +240,21 @@ namespace NArchive {
                     contentMsg << byte;
                 }
                 MessageBox(NULL, contentMsg.str().c_str(), L"Debug Info", MB_OK);
-
+#endif
                 HRESULT writeResult = realOutStream->Write(item.decompressedData.data(), (UINT32)item.decompressedData.size(), NULL);
                 if (writeResult != S_OK) {
                     std::wstringstream errMsg;
+#ifdef _DEBUG
                     errMsg << L"[Debug] Failed to write data for file index " << index << L". Data size: " << item.decompressedData.size();
                     MessageBox(NULL, errMsg.str().c_str(), L"Debug Info", MB_OK);
+#endif
                     return writeResult;
                 }
-
+#ifdef _DEBUG
                 std::wstringstream successMsg;
                 successMsg << L"[Debug] Successfully wrote data for file index " << index << L". Data size: " << item.decompressedData.size();
                 MessageBox(NULL, successMsg.str().c_str(), L"Debug Info", MB_OK);
-
+#endif
                 realOutStream.Release();
                 RINOK(extractCallback->SetOperationResult(NExtract::NOperationResult::kOK));
             }
@@ -294,4 +296,4 @@ namespace NArchive {
             0,
             NULL)
     }
-} 
+}
