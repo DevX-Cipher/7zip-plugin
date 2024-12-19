@@ -10,7 +10,7 @@
 #include "../../Common/LimitedStreams.h"
 #include "../../Common/StreamUtils.h"
 #include "PyInstallerHandler.h"
-
+#include <cstdint>
 
 using namespace NWindows;
 namespace NArchive {
@@ -27,10 +27,10 @@ namespace NArchive {
         class CHandler : public IInArchive, public IInArchiveGetStream, public CMyUnknownImp {
         public:
             MY_UNKNOWN_IMP2(IInArchive, IInArchiveGetStream) // Implementing unknown interface
-            INTERFACE_IInArchive(;)
+                INTERFACE_IInArchive(;)
 
-            // Default constructor
-            CHandler() = default;
+                // Default constructor
+                CHandler() = default;
 
             // Constructor that accepts a PyInstallerHandler reference
             CHandler(PyInstallerHandler& handler) : pyHandler(handler) {}
@@ -44,16 +44,16 @@ namespace NArchive {
 
         // Implement interface functions for the archive properties
         IMP_IInArchive_Props
-        IMP_IInArchive_ArcProps_NO_Table
+            IMP_IInArchive_ArcProps_NO_Table
 
-        /**
-            * @brief Retrieves a property of the archive based on the provided property ID.
-            *
-            * @param propID The ID of the property to retrieve.
-            * @param value Output parameter to receive the property value.
-            * @return HRESULT indicating success or failure.
-            */
-        STDMETHODIMP CHandler::GetArchiveProperty(PROPID propID, PROPVARIANT* value)
+            /**
+                * @brief Retrieves a property of the archive based on the provided property ID.
+                *
+                * @param propID The ID of the property to retrieve.
+                * @param value Output parameter to receive the property value.
+                * @return HRESULT indicating success or failure.
+                */
+            STDMETHODIMP CHandler::GetArchiveProperty(PROPID propID, PROPVARIANT* value)
         {
             NCOM::CPropVariant prop; // Property variant to hold the property value
             switch (propID)
@@ -289,11 +289,32 @@ namespace NArchive {
             return S_OK; // Indicate success
         }
 
-        // Register the archive handler for .exe files
-        REGISTER_ARC_I_NO_SIG(
-            "exe", "exe", 0, 0xAA,
-            0,
-            0,
-            NULL)
+        const uint8_t pyinstallerMagic[] = { 'M', 'E', 'I', 0x0C, 0x0B, 0x0A, 0x0B, 0x0E };
+        /**
+        * @brief Registers an archive handler for .exe files containing PyInstaller archives.
+        *
+        * This function registers a handler that detects .exe files with a specific magic number
+        * and processes them as PyInstaller archives. The handler is triggered when an .exe file
+        * containing the defined magic sequence is encountered.
+        *
+        * @param "exe" The file extension that this handler applies to. In this case, it is for .exe files.
+        * @param "exe" The file type this handler is associated with, which is also '.exe'.
+        * @param 0 Flags for the handler, currently set to 0 (no flags).
+        * @param 0xAA Unique ID for this archive handler, ensuring it's distinguishable.
+        * @param pyinstallerMagic Array containing the magic number (byte sequence) used to identify PyInstaller archives.
+        * @param 0 Reserved field, currently set to 0.
+        * @param NArcInfoFlags::kStartOpen Indicates that the archive should be opened immediately when detected.
+        * @return None.
+        */
+        REGISTER_ARC_I(
+            "exe",                   
+            "exe",                   
+            0,                       
+            0xAA,                    
+            pyinstallerMagic,        
+            0,                       
+            NArcInfoFlags::kStartOpen
+        )
+
     }
 }
