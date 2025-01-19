@@ -1,16 +1,16 @@
-# UnpackPyInstaller
 
+# 7Zip Plugins
 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## Description
 
-**UnpackPyInstaller** is a plugin for the 7-Zip file manager that allows users to unpack PyInstaller archives (.exe or .zip files) with ease. **Please note that this is a beta version** of the plugin; while it is functional, there may be bugs or incomplete features. Your feedback is appreciated as we continue to improve the utility.
+**7Zip Plugins** is a utility for the 7-Zip file manager that allows users to unpack various types of based archives (.exe, .zip, and more) with ease. **This is a beta version**, and the tool allows users to interact with and unpack files from different plugins, providing flexibility and functionality. We appreciate your feedback as we continue to enhance the tool.
 
 ## Features
 
 - Seamlessly integrates with the 7-Zip file manager.
-- Extracts PyInstaller archives (.exe or .zip) effortlessly.
+- Extracts plugin-based archives (.exe or .zip) effortlessly.
 - User-friendly interface for quick access to unpacking features.
 
 ## Requirements
@@ -30,12 +30,12 @@
 
 ## Usage
 
-After installation, you can unpack a PyInstaller archive directly through the 7-Zip file manager:
+After installation, you can unpack a plugin archive directly through the 7-Zip file manager:
 
 1. Open the 7-Zip File Manager.
-2. Navigate to the directory containing your PyInstaller archive.
+2. Navigate to the directory containing your plugin archive.
 3. Right-click on the archive file (e.g., `example.exe` or `example.zip`).
-4. Select the "UnpackPyInstaller" option from the context menu to extract the files.
+4. Select the "UnpackPlugins" option from the context menu to extract the files.
 
 ## License
 
@@ -47,7 +47,6 @@ Contributions are welcome! If you'd like to contribute, please fork the reposito
 
 ## Acknowledgments
 
-- Thank you to the developers of [PyInstaller](https://www.pyinstaller.org/) for their work in packaging Python applications.
 - Special thanks to the team behind [7-Zip](https://www.7-zip.org/) for providing an excellent compression tool.
 
 ## Contact
