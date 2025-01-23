@@ -15,6 +15,7 @@
 using namespace NWindows;
 namespace NArchive {
     namespace NZzz {
+        const uint8_t pyinstallerMagic[] = { 'M', 'E', 'I', 0x0C, 0x0B, 0x0A, 0x0B, 0x0E };
 
         // Define properties used by the handler
         static const Byte kProps[] =
@@ -73,7 +74,7 @@ namespace NArchive {
         * @param callback Callback interface for reporting progress and status.
         * @return HRESULT indicating success or failure.
         */
-        STDMETHODIMP CHandler::Open(IInStream* stream, const UInt64*, IArchiveOpenCallback* callback) {
+                STDMETHODIMP CHandler::Open(IInStream* stream, const UInt64*, IArchiveOpenCallback* callback) {
             Close(); // Close any existing archive state
 
             // Validate input parameters
@@ -81,8 +82,21 @@ namespace NArchive {
                 return S_FALSE; // Invalid arguments
             }
 
-            // Attempt to open the PyInstaller handler
-            HRESULT result = pyHandler.Open(stream, nullptr, callback);
+            // Read the first few bytes to check for PyInstaller signature
+            const size_t magicSize = sizeof(pyinstallerMagic);
+            char magic[magicSize];
+            HRESULT result = stream->Read(magic, magicSize, nullptr);
+            if (FAILED(result)) {
+                return result; // Return if the magic signature cannot be read
+            }
+
+            // Check if the magic signature matches PyInstaller
+            if (memcmp(magic, pyinstallerMagic, magicSize) != 0) {
+                return S_FALSE; // If signature doesn't match, return S_FALSE
+            }
+
+            // Proceed with opening the PyInstaller handler
+            result = pyHandler.Open(stream, nullptr, callback);
             if (FAILED(result)) {
                 return result; // Return if the handler fails to open
             }
@@ -94,12 +108,14 @@ namespace NArchive {
 #ifdef _DEBUG
             MessageBox(NULL, msg.c_str(), L"Debug - CHandler::Open", MB_OK);
 #endif
+
             UInt64 fileSize = 0; // Declare file size variable
             result = stream->Seek(0, STREAM_SEEK_END, &fileSize); // Seek to the end to get the file size
             if (FAILED(result) || fileSize == 0) {
                 return S_FALSE; // Ensure the file size is valid
             }
             stream->Seek(0, STREAM_SEEK_SET, nullptr); // Seek back to the start of the stream
+
             // Get the name of the file from the callback
             CMyComPtr<IArchiveOpenVolumeCallback> volumeCallback;
             result = callback->QueryInterface(IID_IArchiveOpenVolumeCallback, (void**)&volumeCallback);
@@ -289,7 +305,6 @@ namespace NArchive {
             return S_OK; // Indicate success
         }
 
-        const uint8_t pyinstallerMagic[] = { 'M', 'E', 'I', 0x0C, 0x0B, 0x0A, 0x0B, 0x0E };
         /**
         * @brief Registers an archive handler for .exe files containing PyInstaller archives.
         *
