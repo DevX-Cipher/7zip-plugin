@@ -10,12 +10,11 @@
 #include "../../Common/LimitedStreams.h"
 #include "../../Common/StreamUtils.h"
 #include "PyInstallerHandler.h"
-#include <cstdint>
+
 
 using namespace NWindows;
 namespace NArchive {
     namespace NZzz {
-        const uint8_t pyinstallerMagic[] = { 'M', 'E', 'I', 0x0C, 0x0B, 0x0A, 0x0B, 0x0E };
 
         // Define properties used by the handler
         static const Byte kProps[] =
@@ -23,7 +22,7 @@ namespace NArchive {
             kpidPath,  // Path property identifier
             kpidSize,  // Size property identifier
         };
-
+        const uint8_t pyinstallerMagic[] = { 'M', 'E', 'I', 0x0C, 0x0B, 0x0A, 0x0B, 0x0E };
         // CHandler class implements IInArchive and IInArchiveGetStream interfaces
         class CHandler : public IInArchive, public IInArchiveGetStream, public CMyUnknownImp {
         public:
@@ -74,7 +73,7 @@ namespace NArchive {
         * @param callback Callback interface for reporting progress and status.
         * @return HRESULT indicating success or failure.
         */
-                STDMETHODIMP CHandler::Open(IInStream* stream, const UInt64*, IArchiveOpenCallback* callback) {
+        STDMETHODIMP CHandler::Open(IInStream* stream, const UInt64*, IArchiveOpenCallback* callback) {
             Close(); // Close any existing archive state
 
             // Validate input parameters
@@ -82,21 +81,9 @@ namespace NArchive {
                 return S_FALSE; // Invalid arguments
             }
 
-            // Read the first few bytes to check for PyInstaller signature
-            const size_t magicSize = sizeof(pyinstallerMagic);
-            char magic[magicSize];
-            HRESULT result = stream->Read(magic, magicSize, nullptr);
-            if (FAILED(result)) {
-                return result; // Return if the magic signature cannot be read
-            }
 
-            // Check if the magic signature matches PyInstaller
-            if (memcmp(magic, pyinstallerMagic, magicSize) != 0) {
-                return S_FALSE; // If signature doesn't match, return S_FALSE
-            }
-
-            // Proceed with opening the PyInstaller handler
-            result = pyHandler.Open(stream, nullptr, callback);
+            // Attempt to open the PyInstaller handler
+            HRESULT result = pyHandler.Open(stream, nullptr, callback);
             if (FAILED(result)) {
                 return result; // Return if the handler fails to open
             }
@@ -108,14 +95,12 @@ namespace NArchive {
 #ifdef _DEBUG
             MessageBox(NULL, msg.c_str(), L"Debug - CHandler::Open", MB_OK);
 #endif
-
             UInt64 fileSize = 0; // Declare file size variable
             result = stream->Seek(0, STREAM_SEEK_END, &fileSize); // Seek to the end to get the file size
             if (FAILED(result) || fileSize == 0) {
                 return S_FALSE; // Ensure the file size is valid
             }
             stream->Seek(0, STREAM_SEEK_SET, nullptr); // Seek back to the start of the stream
-
             // Get the name of the file from the callback
             CMyComPtr<IArchiveOpenVolumeCallback> volumeCallback;
             result = callback->QueryInterface(IID_IArchiveOpenVolumeCallback, (void**)&volumeCallback);
@@ -238,7 +223,7 @@ namespace NArchive {
                 }
 
                 RINOK(extractCallback->PrepareOperation(askMode));
-#ifdef _DEBUG
+
                 std::wstringstream debugMsg;
                 debugMsg << L"[Debug] Extracting file index " << index << L":\n"
                     << L"  Name: " << item.name.c_str() << L"\n"
@@ -256,21 +241,19 @@ namespace NArchive {
                     contentMsg << byte;
                 }
                 MessageBox(NULL, contentMsg.str().c_str(), L"Debug Info", MB_OK);
-#endif
+
                 HRESULT writeResult = realOutStream->Write(item.decompressedData.data(), (UINT32)item.decompressedData.size(), NULL);
                 if (writeResult != S_OK) {
                     std::wstringstream errMsg;
-#ifdef _DEBUG
                     errMsg << L"[Debug] Failed to write data for file index " << index << L". Data size: " << item.decompressedData.size();
                     MessageBox(NULL, errMsg.str().c_str(), L"Debug Info", MB_OK);
-#endif
                     return writeResult;
                 }
-#ifdef _DEBUG
+
                 std::wstringstream successMsg;
                 successMsg << L"[Debug] Successfully wrote data for file index " << index << L". Data size: " << item.decompressedData.size();
                 MessageBox(NULL, successMsg.str().c_str(), L"Debug Info", MB_OK);
-#endif
+
                 realOutStream.Release();
                 RINOK(extractCallback->SetOperationResult(NExtract::NOperationResult::kOK));
             }
@@ -305,31 +288,15 @@ namespace NArchive {
             return S_OK; // Indicate success
         }
 
-        /**
-        * @brief Registers an archive handler for .exe files containing PyInstaller archives.
-        *
-        * This function registers a handler that detects .exe files with a specific magic number
-        * and processes them as PyInstaller archives. The handler is triggered when an .exe file
-        * containing the defined magic sequence is encountered.
-        *
-        * @param "exe" The file extension that this handler applies to. In this case, it is for .exe files.
-        * @param "exe" The file type this handler is associated with, which is also '.exe'.
-        * @param 0 Flags for the handler, currently set to 0 (no flags).
-        * @param 0xAA Unique ID for this archive handler, ensuring it's distinguishable.
-        * @param pyinstallerMagic Array containing the magic number (byte sequence) used to identify PyInstaller archives.
-        * @param 0 Reserved field, currently set to 0.
-        * @param NArcInfoFlags::kStartOpen Indicates that the archive should be opened immediately when detected.
-        * @return None.
-        */
+        // Register the archive handler for .exe files
         REGISTER_ARC_I(
-            "exe",                   
-            "exe",                   
-            0,                       
-            0xAA,                    
-            pyinstallerMagic,        
-            0,                       
-            NArcInfoFlags::kStartOpen
-        )
-
+            "exe",
+            "exe",
+            0,
+            0xAA,
+            pyinstallerMagic,
+            0,
+            NULL        
+            )
     }
 }
