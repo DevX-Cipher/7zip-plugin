@@ -34,8 +34,8 @@ After installation, you can unpack a plugin archive directly through the 7-Zip f
 
 1. Open the 7-Zip File Manager.
 2. Navigate to the directory containing your plugin archive.
-3. Right-click on the archive file (e.g., `example.exe` or `example.zip`).
-4. Select the "UnpackPlugins" option from the context menu to extract the files.
+3. Right-click on the archive file (e.g., `example.exe`).
+
 
 ## Beta Version Note
 This tool is currently in beta. Please be aware that some features may still need improvement.
