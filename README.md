@@ -22,7 +22,7 @@
 1. **Download and install 7-Zip** from [7-zip.org](https://www.7-zip.org/download.html).
 2. **Clone this repository** or download the source code files:
    ```bash
-   git clone https://github.com/modz2014/7zip-plugin.git
+   git clone https://github.com/DevX-Cipher/7zip-plugin.git
    ```
 
 3. **Copy the plugin files** to the 7-Zip plugins directory:
