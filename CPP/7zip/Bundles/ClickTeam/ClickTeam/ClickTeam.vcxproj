@@ -107,7 +107,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <ModuleDefinitionFile>..\..\..\Archive\Archive.def</ModuleDefinitionFile>
-      <AdditionalDependencies>libbz2.lib;libz-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>
@@ -154,7 +154,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <ModuleDefinitionFile>..\..\..\Archive\Archive.def</ModuleDefinitionFile>
-      <AdditionalDependencies>libz-static.lib;libbz2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
@@ -180,6 +180,8 @@
     <ClInclude Include="..\..\..\..\Common\Wildcard.h" />
     <ClInclude Include="..\..\..\..\Windows\PropVariant.h" />
     <ClInclude Include="..\..\..\Archive\ArchiveExports.h" />
+    <ClInclude Include="..\..\..\Archive\ClickTeam\bzip2_decoder.h" />
+    <ClInclude Include="..\..\..\Archive\ClickTeam\zlib_decoder.h" />
     <ClInclude Include="..\..\..\Archive\DllExports.h" />
     <ClInclude Include="..\..\..\Archive\ClickTeam\InStreamFileArch.h" />
     <ClInclude Include="..\..\..\Archive\ClickTeam\ClickTeamInstallerHandler.h" />
@@ -187,7 +189,6 @@
     <ClInclude Include="..\..\..\Common\ProgressUtils.h" />
     <ClInclude Include="..\..\..\Common\PropId.h" />
     <ClInclude Include="..\..\..\Common\StreamObjects.h" />
-    <ClInclude Include="zLibHead.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

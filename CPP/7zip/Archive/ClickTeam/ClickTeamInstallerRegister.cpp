@@ -12,322 +12,439 @@
 #include "ClickTeamInstallerHandler.h"
 #include <cstdint>
 
-using namespace NWindows;
-namespace NArchive {
-    namespace NZzz {
-        
-        const unsigned char kSignature[] = { 0x77, 0x77, 0x67, 0x54, 0x29, 0x48 };
-        // Define properties used by the handler
-        static const Byte kProps[] =
-        {
-            kpidPath,  // Path property identifier
-            kpidSize,  // Size property identifier
-        };
-
-        // CHandler class implements IInArchive and IInArchiveGetStream interfaces
-        class CHandler : public IInArchive, public IInArchiveGetStream, public CMyUnknownImp {
-        public:
-            MY_UNKNOWN_IMP2(IInArchive, IInArchiveGetStream) // Implementing unknown interface
-                INTERFACE_IInArchive(;)
-
-                // Default constructor
-                CHandler() = default;
-
-            // Constructor that accepts a ClickTeamInstallerHandler reference
-            CHandler(ClickTeamInstallerHandler& handler) : ClickHandler(handler) {}
-
-            // Retrieves a stream from the archive
-            STDMETHOD(GetStream)(UInt32 index, ISequentialInStream** stream);
-
-            ClickTeamInstallerHandler ClickHandler; // Instance of ClickTeamInstallerHandler
-            std::vector<ClickTeamInstallerHandler::FileInfo> items; // Vector to store archive entries
-        };
-
-        // Implement interface functions for the archive properties
-        IMP_IInArchive_Props
-            IMP_IInArchive_ArcProps_NO_Table
-
-            /**
-                * @brief Retrieves a property of the archive based on the provided property ID.
-                *
-                * @param propID The ID of the property to retrieve.
-                * @param value Output parameter to receive the property value.
-                * @return HRESULT indicating success or failure.
-                */
-            STDMETHODIMP CHandler::GetArchiveProperty(PROPID propID, PROPVARIANT* value)
-        {
-            NCOM::CPropVariant prop; // Property variant to hold the property value
-            switch (propID)
-            {
-            case kpidPhySize:
-                prop = (UInt64)1; // Assign a physical size value
-                break;
-            }
-            prop.Detach(value); // Detach the property from the variant
-            return S_OK; // Indicate success
-        }
-
-        /**
-        * @brief Opens the specified input stream as an archive.
-        *
-        * @param stream The input stream to open.
-        * @param callback Callback interface for reporting progress and status.
-        * @return HRESULT indicating success or failure.
-        */
-        STDMETHODIMP CHandler::Open(IInStream* stream, const UInt64*, IArchiveOpenCallback* callback) {
-            Close(); // Close any existing archive state
-
-            // Validate input parameters
-            if (!callback || !stream) {
-                return S_FALSE; // Invalid arguments
-            }
-
-            // Read the first few bytes to check for Clickteam signature
-            const size_t magicSize = sizeof(kSignature);
-            char magic[magicSize];
-            HRESULT result = stream->Read(magic, magicSize, nullptr);
-            if (FAILED(result)) {
-                return result; // Return if the magic signature cannot be read
-            }
-
-            // Check if the magic signature matches Clickteam
-            if (memcmp(magic, kSignature, magicSize) != 0) {
-                return S_FALSE; // If signature doesn't match, return S_FALSE
-            }
-
-            // Proceed with opening the Clickteam handler
-            result = ClickHandler.Open(stream, nullptr, callback);
-            if (FAILED(result)) {
-                return result; // Return if the handler fails to open
-            }
-
-            items = ClickHandler.items; // Retrieve items from the handler
-
-            // Debug message to check the number of items after opening
-            std::wstring msg = L"Size of items vector after ClickteamHandler::Open: " + std::to_wstring(items.size());
 #ifdef _DEBUG
-            MessageBox(NULL, msg.c_str(), L"Debug - CHandler::Open", MB_OK);
+#include <fstream>
 #endif
 
-            UInt64 fileSize = 0; // Declare file size variable
-            result = stream->Seek(0, STREAM_SEEK_END, &fileSize); // Seek to the end to get the file size
-            if (FAILED(result) || fileSize == 0) {
-                return S_FALSE; // Ensure the file size is valid
-            }
-            stream->Seek(0, STREAM_SEEK_SET, nullptr); // Seek back to the start of the stream
+using namespace NWindows;
+namespace NArchive {
+	namespace NZzz {
 
-            // Get the name of the file from the callback
-            CMyComPtr<IArchiveOpenVolumeCallback> volumeCallback;
-            result = callback->QueryInterface(IID_IArchiveOpenVolumeCallback, (void**)&volumeCallback);
-            if (FAILED(result) || !volumeCallback) {
-                return S_FALSE; // Check that the interface was obtained
-            }
-            UString name;
-            {
-                NCOM::CPropVariant prop;
-                result = volumeCallback->GetProperty(kpidName, &prop);
-                if (FAILED(result) || prop.vt != VT_BSTR) {
-                    return S_FALSE; // Ensure the property is a string
-                }
-                name = prop.bstrVal; // Get the name as UString
-            }
+		const unsigned char kSignature[] = { 0x77, 0x77, 0x67, 0x54, 0x29, 0x48 };
 
-            // Check if the file extension is .exe
-            int dotPos = name.ReverseFind_Dot();
-            if (dotPos == -1) {
-                return S_FALSE; // No extension found
-            }
-            const UString ext = name.Ptr(dotPos + 1);
-            return StringsAreEqualNoCase_Ascii(ext, "exe") ? S_OK : S_FALSE; // Return based on extension match
-        }
+		static const Byte kProps[] =
+		{
+				kpidPath,
+				kpidSize,
+				kpidPackSize,
+		};
 
-        /**
-        * @brief Closes the archive and releases resources.
-        *
-        * @return HRESULT indicating success.
-        */
-        STDMETHODIMP CHandler::Close() {
-            return S_OK; // Indicate successful closure
-        }
+#ifdef _DEBUG
+		void DebugLog(const wchar_t* message) {
+			std::wofstream logFile;
+			logFile.open(L"C:\\clickteam_debug.log", std::ios::app);
+			if (logFile.is_open()) {
+				logFile << message << std::endl;
+				logFile.close();
+			}
+		}
 
-        /**
-        * @brief Retrieves the number of items in the archive.
-        *
-        * @param numItems Output parameter to receive the number of items.
-        * @return HRESULT indicating success or failure.
-        */
-        STDMETHODIMP CHandler::GetNumberOfItems(UInt32* numItems) {
-            if (numItems == nullptr) {
-                return E_POINTER; // Return error if pointer is null
-            }
+		void DebugLog(const std::wstring& message) {
+			DebugLog(message.c_str());
+		}
+#else
+		inline void DebugLog(const wchar_t*) {}
+		inline void DebugLog(const std::wstring&) {}
+#endif
 
-            // Access the number of items through the ClickTeamInstallerHandler instance
-            *numItems = static_cast<UInt32>(ClickHandler.items.size()); // Correctly access size of vector
+		class CHandler : public IInArchive, public IInArchiveGetStream, public CMyUnknownImp {
+		public:
+			MY_UNKNOWN_IMP2(IInArchive, IInArchiveGetStream)
 
-            // Debug message to show the number of items
-            std::wstring msg = L"Total items: " + std::to_wstring(*numItems);
+			STDMETHOD(Open)(IInStream* stream, const UInt64* maxCheckStartPosition, IArchiveOpenCallback* openCallback);
+			STDMETHOD(Close)();
+			STDMETHOD(GetNumberOfItems)(UInt32* numItems);
+			STDMETHOD(GetProperty)(UInt32 index, PROPID propID, PROPVARIANT* value);
+			STDMETHOD(Extract)(const UInt32* indices, UInt32 numItems, Int32 testMode, IArchiveExtractCallback* extractCallback);
+			STDMETHOD(GetArchiveProperty)(PROPID propID, PROPVARIANT* value);
+			STDMETHOD(GetNumberOfProperties)(UInt32* numProps);
+			STDMETHOD(GetPropertyInfo)(UInt32 index, BSTR* name, PROPID* propID, VARTYPE* varType);
+			STDMETHOD(GetNumberOfArchiveProperties)(UInt32* numProps);
+			STDMETHOD(GetArchivePropertyInfo)(UInt32 index, BSTR* name, PROPID* propID, VARTYPE* varType);
+			STDMETHOD(GetStream)(UInt32 index, ISequentialInStream** stream);
 
-            MessageBox(NULL, msg.c_str(), L"Debug - GetNumberOfItems", MB_OK);
+			CHandler() {
+				DebugLog(L"CHandler constructed");
+			}
 
-            return S_OK; // Indicate success
-        }
+			CHandler(ClickTeamInstallerHandler& handler) : ClickHandler(handler) {
+				DebugLog(L"CHandler constructed with handler");
+			}
 
-        /**
-        * @brief Retrieves a specific property for an item in the archive.
-        *
-        * @param index The index of the item.
-        * @param propID The property ID to retrieve.
-        * @param value Output parameter to receive the property value.
-        * @return HRESULT indicating success or failure.
-        */
-        STDMETHODIMP CHandler::GetProperty(UInt32 index, PROPID propID, PROPVARIANT* value)
-        {
-            NCOM::CPropVariant prop; // Property variant to hold the value
-            switch (propID)
-            {
-            case kpidPath:
-                prop = (items[index].path.c_str()); // Set the path property
-                break;
-            case kpidSize: prop = items[index].uncompressedSize;
-                break;
-            }
-            prop.Detach(value); // Detach the property from the variant
-            return S_OK; // Indicate success
-        }
+			ClickTeamInstallerHandler ClickHandler;
+			std::vector<ClickTeamInstallerHandler::FileInfo> items;
+		};
 
+		/**
+		 * @brief Retrieves the number of archive-level properties.
+		 *
+		 * @param numProps Output parameter that receives the number of archive properties.
+		 * @return HRESULT Always returns S_OK.
+		 */
+		STDMETHODIMP CHandler::GetNumberOfArchiveProperties(UInt32* numProps)
+		{
+			DebugLog(L"GetNumberOfArchiveProperties called");
+			*numProps = 0;
+			return S_OK;
+		}
 
-        /**
-        * @brief Extracts items from the archive.
-        *
-        * @param indices Array of indices for items to extract.
-        * @param numItems Number of items to extract.
-        * @param testMode Flag indicating if this is a test extraction.
-        * @param extractCallback Callback for extraction progress and results.
-        * @return HRESULT indicating success or failure.
-        */
-        STDMETHODIMP CHandler::Extract(const UInt32* indices, UInt32 numItems, Int32 testMode, IArchiveExtractCallback* extractCallback) {
-            bool allFilesMode = (numItems == (UInt32)(Int32)-1);
-            if (allFilesMode) numItems = static_cast<UInt32>(items.size());
-            if (numItems == 0) return S_OK;
+		/**
+		 * @brief Retrieves archive-level property info.
+		 *
+		 * @param index Index of the archive property (0-based).
+		 * @param name Optional output parameter for the property name (BSTR).
+		 * @param propID Output parameter that receives the property ID.
+		 * @param varType Output parameter that receives the VARIANT type of the property.
+		 * @return HRESULT Always returns E_NOTIMPL.
+		 */
+		STDMETHODIMP CHandler::GetArchivePropertyInfo(UInt32 index, BSTR* name, PROPID* propID, VARTYPE* varType)
+		{
+			DebugLog(L"GetArchivePropertyInfo called");
+			return E_NOTIMPL;
+		}
 
-            UInt64 totalSize = 0, currentSize = 0;
-            for (size_t i = 0; i < numItems; i++) {
-                totalSize += items[allFilesMode ? i : indices[i]].uncompressedSize;
-            }
-            extractCallback->SetTotal(totalSize);
+		/**
+		 * @brief Retrieves a value for a specific archive-level property.
+		 *
+		 * @param propID Archive property ID.
+		 * @param value Output parameter that receives the property value.
+		 * @return HRESULT Always returns S_OK (property is empty).
+		 */
+		STDMETHODIMP CHandler::GetArchiveProperty(PROPID propID, PROPVARIANT* value)
+		{
+			DebugLog(L"GetArchiveProperty called, propID=" + std::to_wstring(propID));
+			NCOM::CPropVariant prop;
+			prop.Detach(value);
+			return S_OK;
+		}
+		/**
+		 * @brief Opens the archive for reading.
+		 *
+		 * Verifies the archive's signature and initializes internal structures.
+		 *
+		 * @param stream Input stream representing the archive file.
+		 * @param maxCheckStartPosition Not used (pass nullptr).
+		 * @param callback Callback interface for progress and extraction info.
+		 * @return HRESULT S_OK if successful, S_FALSE if the signature does not match, or appropriate HRESULT on error.
+		 */
+		STDMETHODIMP CHandler::Open(IInStream* stream, const UInt64*, IArchiveOpenCallback* callback) {
+			DebugLog(L"=== OPEN CALLED ===");
+			Close();
 
-            CLocalProgress* lps = new CLocalProgress;
-            CMyComPtr<ICompressProgressInfo> progress = lps;
-            lps->Init(extractCallback, false);
+			if (!callback || !stream) {
+				DebugLog(L"Open: Invalid parameters");
+				return S_FALSE;
+			}
 
-            for (UINT i = 0; i < numItems; i++) {
-                lps->InSize = currentSize;
-                lps->OutSize = currentSize;
-                RINOK(lps->SetCur());
+			const size_t magicSize = sizeof(kSignature);
+			char magic[magicSize];
+			HRESULT result = stream->Read(magic, magicSize, nullptr);
+			if (FAILED(result)) {
+				DebugLog(L"Open: Failed to read magic");
+				return result;
+			}
 
-                CMyComPtr<ISequentialOutStream> realOutStream;
-                Int32 askMode = testMode ? NExtract::NAskMode::kTest : NExtract::NAskMode::kExtract;
-                UINT32 index = allFilesMode ? i : indices[i];
-                auto& item = items[index];
-                currentSize += item.uncompressedSize;
+			if (memcmp(magic, kSignature, magicSize) != 0) {
+				DebugLog(L"Open: Magic signature doesn't match");
+				return S_FALSE;
+			}
 
-                RINOK(extractCallback->GetStream(index, &realOutStream, askMode));
-                if (!testMode && !realOutStream) {
-                    MessageBox(NULL, L"[Debug] Skipping file due to missing output stream.", L"Debug Info", MB_OK);
-                    continue;
-                }
+			DebugLog(L"Open: Magic signature matched!");
 
-                RINOK(extractCallback->PrepareOperation(askMode));
+			result = ClickHandler.Open(stream, nullptr, callback);
+			if (FAILED(result)) {
+				DebugLog(L"Open: ClickHandler.Open failed");
+				return result;
+			}
 
-                std::wstringstream debugMsg;
-                debugMsg << L"[Debug] Extracting file index " << index << L":\n"
-                    << L"  Name: " << item.path.c_str() << L"\n"
-                  
-                    << L"  Compressed Size: " << item.compressedSize << L"\n"
-                    << L"  Uncompressed Size: " << item.uncompressedSize << L"\n"
-                    ;
-                MessageBox(NULL, debugMsg.str().c_str(), L"Debug Info", MB_OK);
+			items = ClickHandler.items;
 
-                // Check data content
-                std::wstringstream contentMsg;
-                contentMsg << L"[Debug] Data content for file index " << index << L": ";
-                for (const auto& byte : item.decompressedData) {
-                    contentMsg << byte;
-                }
-                MessageBox(NULL, contentMsg.str().c_str(), L"Debug Info", MB_OK);
+			DebugLog(L"Open: Items loaded = " + std::to_wstring(items.size()));
+#ifdef _DEBUG
+			for (size_t i = 0; i < items.size(); i++) {
+				std::wstring path(items[i].path.begin(), items[i].path.end());
+				DebugLog(L"  [" + std::to_wstring(i) + L"] " + path);
+			}
+#endif
 
-                HRESULT writeResult = realOutStream->Write(item.decompressedData.data(), (UINT32)item.decompressedData.size(), NULL);
-                if (writeResult != S_OK) {
-                    std::wstringstream errMsg;
+			DebugLog(L"Open: SUCCESS - Archive opened with " + std::to_wstring(items.size()) + L" items");
 
-                    errMsg << L"[Debug] Failed to write data for file index " << index << L". Data size: " << item.decompressedData.size();
-                    MessageBox(NULL, errMsg.str().c_str(), L"Debug Info", MB_OK);
+			return S_OK;
+		}
 
-                    return writeResult;
-                }
+		/**
+		 * @brief Closes the archive and releases all associated resources.
+		 *
+		 * Clears internal item lists and resets the ClickHandler.
+		 *
+		 * @return HRESULT Always returns S_OK.
+		 */
+		STDMETHODIMP CHandler::Close() {
+			DebugLog(L"Close called");
+			items.clear();
+			ClickHandler.items.clear();
+			return S_OK;
+		}
 
-                std::wstringstream successMsg;
-                successMsg << L"[Debug] Successfully wrote data for file index " << index << L". Data size: " << item.decompressedData.size();
-                MessageBox(NULL, successMsg.str().c_str(), L"Debug Info", MB_OK);
+		/**
+		 * @brief Retrieves the total number of items in the archive.
+		 *
+		 * @param numItems Output parameter that receives the number of items.
+		 * @return HRESULT S_OK if successful, E_POINTER if numItems is nullptr.
+		 */
+		STDMETHODIMP CHandler::GetNumberOfItems(UInt32* numItems) {
+			if (numItems == nullptr) {
+				DebugLog(L"GetNumberOfItems: NULL pointer!");
+				return E_POINTER;
+			}
 
-                realOutStream.Release();
-                RINOK(extractCallback->SetOperationResult(NExtract::NOperationResult::kOK));
-            }
+			*numItems = static_cast<UInt32>(items.size());
+			DebugLog(L"GetNumberOfItems: returning " + std::to_wstring(*numItems));
 
-            lps->InSize = totalSize;
-            lps->OutSize = totalSize;
-            return lps->SetCur();
-        }
+			return S_OK;
+		}
+		
+		/**
+		 * @brief Retrieves the total number of properties available per item.
+		 *
+		 * @param numProps Output parameter that receives the number of properties.
+		 * @return HRESULT S_OK if successful, E_POINTER if numProps is nullptr.
+		 */
+		STDMETHODIMP CHandler::GetNumberOfProperties(UInt32* numProps)
+		{
+			if (numProps == nullptr) {
+				DebugLog(L"GetNumberOfProperties: NULL pointer!");
+				return E_POINTER;
+			}
 
+			*numProps = ARRAY_SIZE(kProps);
+			DebugLog(L"GetNumberOfProperties: returning " + std::to_wstring(*numProps));
 
-        /**
-        * @brief Retrieves a stream corresponding to a specific item in the archive.
-        *
-        * @param index The index of the item for which to retrieve the stream.
-        * @param stream Output parameter to receive the stream.
-        * @return HRESULT indicating success or failure.
-        */
-        STDMETHODIMP CHandler::GetStream(UInt32 index, ISequentialInStream** stream) {
-            if (index >= items.size()) {
-                return E_FAIL; // Safety check for index bounds
-            }
-            *stream = 0; // Initialize the output stream
+			return S_OK;
+		}
+		
+		/**
+		 * @brief Retrieves property info for a given index.
+		 *
+		 * @param index Index of the property (0-based).
+		 * @param name Optional output parameter for the property name (BSTR). May be nullptr.
+		 * @param propID Output parameter that receives the property ID.
+		 * @param varType Output parameter that receives the VARIANT type of the property.
+		 * @return HRESULT S_OK if successful, E_INVALIDARG if index is out of range.
+		 */
+		STDMETHODIMP CHandler::GetPropertyInfo(UInt32 index, BSTR* name, PROPID* propID, VARTYPE* varType)
+		{
+			DebugLog(L"GetPropertyInfo: index=" + std::to_wstring(index));
 
-            // Create a buffer stream for the item data
-            CBufInStream* streamSpec = new CBufInStream;
-            CMyComPtr<ISequentialInStream> streamTemp = streamSpec; // Manage the stream with smart pointer
+			if (index >= ARRAY_SIZE(kProps)) {
+				DebugLog(L"GetPropertyInfo: index out of range!");
+				return E_INVALIDARG;
+			}
 
-            // Initialize the stream with the item data
-            streamSpec->Init(reinterpret_cast<const Byte*>(items[index].decompressedData.data()), static_cast<UInt32>(items[index].decompressedData.size()));
-            // Assign the stream to the output parameter
-            *stream = streamTemp.Detach();
-            return S_OK; // Indicate success
-        }
+			if (propID) {
+				*propID = kProps[index];
+				DebugLog(L"  propID=" + std::to_wstring(kProps[index]));
+			}
 
-        /**
-        * @brief Registers an archive handler for .exe files containing PyInstaller archives.
-        *
-        * This function registers a handler that detects .exe files with a specific magic number
-        * and processes them as PyInstaller archives. The handler is triggered when an .exe file
-        * containing the defined magic sequence is encountered.
-        *
-        * @param "exe" The file extension that this handler applies to. In this case, it is for .exe files.
-        * @param "exe" The file type this handler is associated with, which is also '.exe'.
-        * @param 0 Flags for the handler, currently set to 0 (no flags).
-        * @param 0xAA Unique ID for this archive handler, ensuring it's distinguishable.
-        * @param pyinstallerMagic Array containing the magic number (byte sequence) used to identify PyInstaller archives.
-        * @param 0 Reserved field, currently set to 0.
-        * @param NArcInfoFlags::kStartOpen Indicates that the archive should be opened immediately when detected.
-        * @return None.
-        */
-        REGISTER_ARC_I(
-            "clickteam_exe",
-            "exe",
-            0,
-            0xAB,  // Different unique priority for clickteam
-            kSignature,  // Assume you have a specific magic signature for clickteam
-            0,
-            0)
+			if (varType) {
+				switch (kProps[index]) {
+				case kpidPath:
+					*varType = VT_BSTR;
+					DebugLog(L"  varType=VT_BSTR");
+					break;
+				case kpidSize:
+				case kpidPackSize:
+					*varType = VT_UI8;
+					DebugLog(L"  varType=VT_UI8");
+					break;
+				default:
+					*varType = VT_EMPTY;
+				}
+			}
 
-    }
+			if (name) {
+				*name = nullptr;
+			}
+
+			return S_OK;
+		}
+		
+		/**
+		 * @brief Retrieves a property value for a specific item.
+		 *
+		 * @param index Index of the item (0-based).
+		 * @param propID The property ID to retrieve (e.g., kpidPath, kpidSize).
+		 * @param value Output parameter that receives the property value.
+		 * @return HRESULT S_OK if successful, E_POINTER if value is nullptr.
+		 */
+		STDMETHODIMP CHandler::GetProperty(UInt32 index, PROPID propID, PROPVARIANT* value)
+		{
+			DebugLog(L">>> GetProperty CALLED <<<");
+			DebugLog(L"  index=" + std::to_wstring(index));
+			DebugLog(L"  propID=" + std::to_wstring(propID));
+
+			if (value == nullptr) {
+				DebugLog(L"  ERROR: value is NULL!");
+				return E_POINTER;
+			}
+
+			NCOM::CPropVariant prop;
+
+			if (index >= items.size()) {
+				DebugLog(L"  ERROR: index out of range! (size=" + std::to_wstring(items.size()) + L")");
+				prop.Detach(value);
+				return S_OK;
+			}
+
+			switch (propID)
+			{
+			case kpidPath:
+			{
+				DebugLog(L"  Getting PATH property");
+				if (items[index].path.empty()) {
+					DebugLog(L"    Path is empty, using fallback");
+					prop = L"unnamed.bin";
+				}
+				else {
+					UString widePath;
+					const std::string& pathStr = items[index].path;
+
+					for (size_t i = 0; i < pathStr.length(); i++) {
+						widePath += (wchar_t)(unsigned char)pathStr[i];
+					}
+
+#ifdef _DEBUG
+					std::wstring pathLog = L"    Returning path: ";
+					for (int i = 0; i < widePath.Len(); i++) {
+						pathLog += widePath[i];
+					}
+					DebugLog(pathLog.c_str());
+#endif
+
+					prop = widePath;
+				}
+			}
+			break;
+
+			case kpidSize:
+				DebugLog(L"  Getting SIZE property: " + std::to_wstring(items[index].uncompressedSize));
+				prop = (UInt64)items[index].uncompressedSize;
+				break;
+
+			case kpidPackSize:
+				DebugLog(L"  Getting PACKSIZE property: " + std::to_wstring(items[index].compressedSize));
+				prop = (UInt64)items[index].compressedSize;
+				break;
+
+			case kpidIsDir:
+				DebugLog(L"  Getting ISDIR property: false");
+				prop = false;
+				break;
+
+			default:
+				DebugLog(L"  Unknown propID: " + std::to_wstring(propID));
+				break;
+			}
+
+			prop.Detach(value);
+			return S_OK;
+		}
+		
+		/**
+		 * @brief Extracts one or more items from the archive.
+		 *
+		 * Handles both test (verification) mode and actual extraction mode.
+		 *
+		 * @param indices Array of item indices to extract. Ignored if numItems == -1.
+		 * @param numItems Number of items to extract, or -1 for all items.
+		 * @param testMode Non-zero to test items without writing output.
+		 * @param extractCallback Callback interface to receive extracted streams.
+		 * @return HRESULT indicating success or failure of the extraction operation.
+		 */
+		STDMETHODIMP CHandler::Extract(const UInt32* indices, UInt32 numItems, Int32 testMode, IArchiveExtractCallback* extractCallback) {
+			DebugLog(L"Extract called: numItems=" + std::to_wstring(numItems));
+
+			bool allFilesMode = (numItems == (UInt32)(Int32)-1);
+			if (allFilesMode) numItems = static_cast<UInt32>(items.size());
+			if (numItems == 0) return S_OK;
+
+			UInt64 totalSize = 0, currentSize = 0;
+			for (size_t i = 0; i < numItems; i++) {
+				totalSize += items[allFilesMode ? i : indices[i]].uncompressedSize;
+			}
+			extractCallback->SetTotal(totalSize);
+
+			CLocalProgress* lps = new CLocalProgress;
+			CMyComPtr<ICompressProgressInfo> progress = lps;
+			lps->Init(extractCallback, false);
+
+			for (UINT i = 0; i < numItems; i++) {
+				lps->InSize = currentSize;
+				lps->OutSize = currentSize;
+				RINOK(lps->SetCur());
+
+				CMyComPtr<ISequentialOutStream> realOutStream;
+				Int32 askMode = testMode ? NExtract::NAskMode::kTest : NExtract::NAskMode::kExtract;
+				UINT32 index = allFilesMode ? i : indices[i];
+				auto& item = items[index];
+				currentSize += item.uncompressedSize;
+
+				RINOK(extractCallback->GetStream(index, &realOutStream, askMode));
+				if (!testMode && !realOutStream) {
+					continue;
+				}
+
+				RINOK(extractCallback->PrepareOperation(askMode));
+
+				HRESULT writeResult = realOutStream->Write(item.decompressedData.data(), (UINT32)item.decompressedData.size(), NULL);
+				if (writeResult != S_OK) {
+					DebugLog(L"Extract: Write failed for index " + std::to_wstring(index));
+					return writeResult;
+				}
+
+				realOutStream.Release();
+				RINOK(extractCallback->SetOperationResult(NExtract::NOperationResult::kOK));
+			}
+
+			lps->InSize = totalSize;
+			lps->OutSize = totalSize;
+			return lps->SetCur();
+		}
+		
+		/**
+		 * @brief Retrieves a stream corresponding to a specific item in the archive.
+		 *
+		 * Returns a sequential input stream for reading the contents of the item.
+		 *
+		 * @param index Index of the item (0-based).
+		 * @param stream Output parameter that receives the stream interface.
+		 * @return HRESULT S_OK if successful, E_FAIL if index is out of range.
+		 */
+		STDMETHODIMP CHandler::GetStream(UInt32 index, ISequentialInStream** stream) {
+			DebugLog(L"GetStream called: index=" + std::to_wstring(index));
+
+			if (index >= items.size()) {
+				return E_FAIL;
+			}
+			*stream = 0;
+
+			CBufInStream* streamSpec = new CBufInStream;
+			CMyComPtr<ISequentialInStream> streamTemp = streamSpec;
+
+			streamSpec->Init(reinterpret_cast<const Byte*>(items[index].decompressedData.data()),
+				static_cast<UInt32>(items[index].decompressedData.size()));
+			*stream = streamTemp.Detach();
+			return S_OK;
+		}
+
+		REGISTER_ARC_I(
+			"clickteam_exe",
+			"exe",
+			0,
+			0xAB,
+			kSignature,
+			0,
+			NArcInfoFlags::kFindSignature)
+
+	}
 }

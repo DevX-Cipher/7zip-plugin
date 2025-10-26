@@ -45,9 +45,6 @@
     <ClInclude Include="..\..\..\Common\StreamObjects.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="zLibHead.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\Archive\ClickTeam\ClickTeamInstallerHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -55,6 +52,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Archive\ClickTeam\stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Archive\ClickTeam\zlib_decoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Archive\ClickTeam\bzip2_decoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
