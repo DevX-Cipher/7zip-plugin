@@ -9,6 +9,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PyInstaller", "CPP\7zip\Bun
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Pak", "CPP\7zip\Bundles\Pak\Pak\Pak.vcxproj", "{3A75AC2B-7CAD-4BE3-A637-E472FEB99266}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InstallShield", "CPP\7zip\Bundles\InstallShield\InstallShield\InstallShield.vcxproj", "{F5DE740D-4E2A-44DD-A70C-3A69782E1DA5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PSX", "CPP\7zip\Bundles\PSX\PSX\PSX.vcxproj", "{7BD37514-8172-4EA3-B280-58F97AED3237}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -41,6 +45,22 @@ Global
 		{3A75AC2B-7CAD-4BE3-A637-E472FEB99266}.Release|x64.Build.0 = Release|x64
 		{3A75AC2B-7CAD-4BE3-A637-E472FEB99266}.Release|x86.ActiveCfg = Release|Win32
 		{3A75AC2B-7CAD-4BE3-A637-E472FEB99266}.Release|x86.Build.0 = Release|Win32
+		{F5DE740D-4E2A-44DD-A70C-3A69782E1DA5}.Debug|x64.ActiveCfg = Debug|x64
+		{F5DE740D-4E2A-44DD-A70C-3A69782E1DA5}.Debug|x64.Build.0 = Debug|x64
+		{F5DE740D-4E2A-44DD-A70C-3A69782E1DA5}.Debug|x86.ActiveCfg = Debug|Win32
+		{F5DE740D-4E2A-44DD-A70C-3A69782E1DA5}.Debug|x86.Build.0 = Debug|Win32
+		{F5DE740D-4E2A-44DD-A70C-3A69782E1DA5}.Release|x64.ActiveCfg = Release|x64
+		{F5DE740D-4E2A-44DD-A70C-3A69782E1DA5}.Release|x64.Build.0 = Release|x64
+		{F5DE740D-4E2A-44DD-A70C-3A69782E1DA5}.Release|x86.ActiveCfg = Release|Win32
+		{F5DE740D-4E2A-44DD-A70C-3A69782E1DA5}.Release|x86.Build.0 = Release|Win32
+		{7BD37514-8172-4EA3-B280-58F97AED3237}.Debug|x64.ActiveCfg = Debug|x64
+		{7BD37514-8172-4EA3-B280-58F97AED3237}.Debug|x64.Build.0 = Debug|x64
+		{7BD37514-8172-4EA3-B280-58F97AED3237}.Debug|x86.ActiveCfg = Debug|Win32
+		{7BD37514-8172-4EA3-B280-58F97AED3237}.Debug|x86.Build.0 = Debug|Win32
+		{7BD37514-8172-4EA3-B280-58F97AED3237}.Release|x64.ActiveCfg = Release|x64
+		{7BD37514-8172-4EA3-B280-58F97AED3237}.Release|x64.Build.0 = Release|x64
+		{7BD37514-8172-4EA3-B280-58F97AED3237}.Release|x86.ActiveCfg = Release|Win32
+		{7BD37514-8172-4EA3-B280-58F97AED3237}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
