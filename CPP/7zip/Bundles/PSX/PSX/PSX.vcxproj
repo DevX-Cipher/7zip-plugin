@@ -145,6 +145,7 @@
       <PreprocessorDefinitions>NDEBUG;FORMATZZZ_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -153,7 +154,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <ModuleDefinitionFile>..\..\..\Archive\Archive.def</ModuleDefinitionFile>
-      <AdditionalDependencies>libz-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent />
   </ItemDefinitionGroup>
@@ -180,9 +181,13 @@
     <ClInclude Include="..\..\..\..\Windows\PropVariant.h" />
     <ClInclude Include="..\..\..\Archive\ArchiveExports.h" />
     <ClInclude Include="..\..\..\Archive\DllExports.h" />
+    <ClInclude Include="..\..\..\Archive\PSX\log.h" />
+    <ClInclude Include="..\..\..\Archive\PSX\ps3_pkg.h" />
+    <ClInclude Include="..\..\..\Archive\PSX\psx_pup.h" />
+    <ClInclude Include="..\..\..\Archive\PSX\ps4_pkg.h" />
     <ClInclude Include="..\..\..\Archive\PSX\PSX.h" />
-    <ClInclude Include="..\..\..\Archive\PSX\ps3_pkg_crypto.h" />
     <ClInclude Include="..\..\..\Archive\PSX\stdafx.h" />
+    <ClInclude Include="..\..\..\Archive\PSX\unified_psx.h" />
     <ClInclude Include="..\..\..\Common\ProgressUtils.h" />
     <ClInclude Include="..\..\..\Common\PropId.h" />
     <ClInclude Include="..\..\..\Common\StreamObjects.h" />

@@ -48,10 +48,22 @@
     <ClInclude Include="..\..\..\Archive\PSX\stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Archive\PSX\ps3_pkg_crypto.h">
+    <ClInclude Include="..\..\..\Archive\PSX\unified_psx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Archive\PSX\PSX.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Archive\PSX\ps3_pkg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Archive\PSX\ps4_pkg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Archive\PSX\psx_pup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Archive\PSX\log.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
