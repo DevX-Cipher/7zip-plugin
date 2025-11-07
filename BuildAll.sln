@@ -13,6 +13,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InstallShield", "CPP\7zip\B
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PSX", "CPP\7zip\Bundles\PSX\PSX\PSX.vcxproj", "{7BD37514-8172-4EA3-B280-58F97AED3237}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Exfat", "CPP\7zip\Bundles\Exfat\Exfat\Exfat.vcxproj", "{3A75AC2B-7CAD-4BE3-A637-E472FEB99266}"
+EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
