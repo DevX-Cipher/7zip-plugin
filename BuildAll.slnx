@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="CPP/7zip/Bundles/ClickTeam/ClickTeam/ClickTeam.vcxproj" Id="0daba527-02ec-43b2-92c3-d9d91c0e4ec6" />
+  <Project Path="CPP/7zip/Bundles/Exfat/Exfat/Exfat.vcxproj" Id="3a75ac2b-7cad-4be3-a637-e472feb99266" />
+  <Project Path="CPP/7zip/Bundles/Innosetup/Innosetup/Innosetup.vcxproj" Id="aa59c940-9942-496d-88ce-e7aa34830eed" />
+  <Project Path="CPP/7zip/Bundles/InstallShield/InstallShield/InstallShield.vcxproj" Id="f5de740d-4e2a-44dd-a70c-3a69782e1da5" />
+  <Project Path="CPP/7zip/Bundles/Pak/Pak/Pak.vcxproj" Id="85d243bd-73eb-48f8-aa90-b2d2f92b2bc8" />
+  <Project Path="CPP/7zip/Bundles/PSX/PSX/PSX.vcxproj" Id="7bd37514-8172-4ea3-b280-58f97aed3237" />
+  <Project Path="CPP/7zip/Bundles/PyInstaller/PyInstaller/PyInstaller.vcxproj" Id="c8b5ab86-d476-4b2e-9916-66eaafa5a216" />
+  <Project Path="CPP/7zip/Bundles/RPAHandler/RPAHandler/RPAHandler.vcxproj" Id="20b17899-c034-48be-801e-9b3bb1b606e7" />
+  <Project Path="CPP/7zip/Bundles/STK/STK/STKHandler.vcxproj" Id="25d2f831-a565-4937-a434-4860ce83d0e2" />
+</Solution>
