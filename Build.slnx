@@ -10,5 +10,7 @@
   <Project Path="CPP/7zip/Bundles/PSX/PSX/PSX.vcxproj" Id="7bd37514-8172-4ea3-b280-58f97aed3237" />
   <Project Path="CPP/7zip/Bundles/PyInstaller/PyInstaller/PyInstaller.vcxproj" Id="c8b5ab86-d476-4b2e-9916-66eaafa5a216" />
   <Project Path="CPP/7zip/Bundles/STK/STK/STKHandler.vcxproj" Id="25d2f831-a565-4937-a434-4860ce83d0e2" />
+  <Project Path="CPP/7zip/Bundles/RPAHandler/RPAHandler/RPAHandler.vcxproj" Id="20b17899-c034-48be-801e-9b3bb1b606e7" />
+
 
 </Solution>

@@ -1,0 +1,21 @@
+﻿  Alloc.c
+  IntToString.cpp
+  MyString.cpp
+  Wildcard.cpp
+  PropVariant.cpp
+  ArchiveExports.cpp
+  DllExports.cpp
+  RPAHandler.cpp
+C:\Users\DevX-Cipher\Desktop\7zip-plugin\CPP\7zip\Archive\RPAHandler\RPAHandler.h(1239,14): warning C4018: '>=': signed/unsigned mismatch
+  (compiling source file '../../../Archive/RPAHandler/RPAHandler.cpp')
+  
+C:\Users\DevX-Cipher\Desktop\7zip-plugin\CPP\7zip\Archive\RPAHandler\RPAHandler.cpp(358,29): warning C4018: '<': signed/unsigned mismatch
+  stdafx.cpp
+  ProgressUtils.cpp
+  PropId.cpp
+  StreamObjects.cpp
+  Generating Code...
+     Creating library C:\Users\DevX-Cipher\Desktop\7zip-plugin\x64\Debug\RPAHandler_x64.lib and object C:\Users\DevX-Cipher\Desktop\7zip-plugin\x64\Debug\RPAHandler_x64.exp
+  RPAHandler.vcxproj -> C:\Users\DevX-Cipher\Desktop\7zip-plugin\x64\Debug\RPAHandler_x64.dll
+  C:\Users\DevX-Cipher\Desktop\7zip-plugin\x64\Debug\RPAHandler_x64.dll
+  1 File(s) copied
