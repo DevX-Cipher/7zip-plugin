@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\7zip-extension-src">
+      <UniqueIdentifier>{8F4CB5A2-1EE1-4E9F-860A-C8E83E5F6265}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Header Files\7zip-extension-src">
+      <UniqueIdentifier>{F8231A20-9D8C-4A12-82F8-5DE9C7AB1340}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+  </ItemGroup>
+ <ItemGroup>
+  <ClCompile Include="..\7zip-extension-src\src\StreamUtils.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\MyString.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\IntToString.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\StringConvert.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\ProgressUtils.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\PropVariant.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\CopyCoder.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\Alloc.c">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\LimitedStreams.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\PropId.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\ArchiveExports.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="..\7zip-extension-src\src\DllExports2.cpp">
+    <Filter>Source Files\7zip-extension-src</Filter>
+  </ClCompile>
+  <ClCompile Include="src\PSX.cpp">
+    <Filter>Source Files</Filter>
+  </ClCompile>
+</ItemGroup>
+
+<ItemGroup>
+  <ClInclude Include="..\7zip-extension-src\include\StreamUtils.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\Alloc.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\CopyCoder.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\CpuArch.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\Defs.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\IArchive.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\ICoder.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\IDecl.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\IntToString.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\IProgress.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\IStream.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\LimitedStreams.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\MethodId.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\MyBuffer.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\MyCom.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\MyGuidDef.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\MyString.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\MyTypes.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\MyUnknown.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\MyVector.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\MyWindows.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\ProgressUtils.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\PropID.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\PropVariant.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\RegisterArc.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\RegisterCodec.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\StringConvert.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="..\7zip-extension-src\include\7zTypes.h">
+    <Filter>Header Files\7zip-extension-src</Filter>
+  </ClInclude>
+  <ClInclude Include="src\buffer.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\log.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\ps3_pkg.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\ps3_pkg_crypto.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\ps4_pkg.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\ps5_pkg.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\PSX.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\psx_pup.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\registerArch.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\sfo.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\sha.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+  <ClInclude Include="src\zlib_decoder.h">
+    <Filter>Header Files</Filter>
+  </ClInclude>
+</ItemGroup>
+ <ItemGroup>
+    <None Include="..\7zip-extension-src\Archive.def">
+      <Filter>Source Files\7zip-extension-src</Filter>
+    </None>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{25D2F831-A565-4937-A434-4860CE83D0E2}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>FormatZzz</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>STKHandler</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <!-- Debug Configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <!-- Release Configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <!-- PropertySheets for Debug Configurations -->
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <!-- Incremental Linking -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <TargetName>$(ProjectName)_x64</TargetName>
+  </PropertyGroup>
+  <!-- Item Definition Groups -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;FORMATZZZ_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <ModuleDefinitionFile>..\..\..\Archive\Archive.def</ModuleDefinitionFile>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;FORMATZZZ_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\7zip-extension-src\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <ModuleDefinitionFile>..\7zip-extension-src\Archive.def</ModuleDefinitionFile>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>xcopy /Y "$(TargetPath)" "C:\Program Files\7-Zip\Formats\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <!-- Release Configurations -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;FORMATZZZ_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <ModuleDefinitionFile>..\..\..\Archive\Archive.def</ModuleDefinitionFile>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;FORMATZZZ_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <ModuleDefinitionFile>..\..\..\Archive\Archive.def</ModuleDefinitionFile>
+      <AdditionalDependencies>libz-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent />
+  </ItemDefinitionGroup>
+  <!-- Source Files Inclusion -->
+  <ItemGroup>
+    <ClCompile Include="..\7zip-extension-src\src\Alloc.c" />
+    <ClCompile Include="..\7zip-extension-src\src\ArchiveExports.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\CopyCoder.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\DllExports2.cpp" />
+    <ClCompile Include="src\STKHandler.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\IntToString.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\LimitedStreams.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\MyString.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\ProgressUtils.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\PropId.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\PropVariant.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\StreamUtils.cpp" />
+    <ClCompile Include="..\7zip-extension-src\src\StringConvert.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\7zip-extension-src\include\7zTypes.h" />
+    <ClInclude Include="..\7zip-extension-src\include\Alloc.h" />
+    <ClInclude Include="src\STKHandler.h" />
+    <ClInclude Include="..\7zip-extension-src\include\CopyCoder.h" />
+    <ClInclude Include="..\7zip-extension-src\include\CpuArch.h" />
+    <ClInclude Include="..\7zip-extension-src\include\Defs.h" />
+    <ClInclude Include="..\7zip-extension-src\include\IArchive.h" />
+    <ClInclude Include="..\7zip-extension-src\include\ICoder.h" />
+    <ClInclude Include="..\7zip-extension-src\include\IDecl.h" />
+    <ClInclude Include="..\7zip-extension-src\include\IntToString.h" />
+    <ClInclude Include="..\7zip-extension-src\include\IProgress.h" />
+    <ClInclude Include="..\7zip-extension-src\include\IStream.h" />
+    <ClInclude Include="..\7zip-extension-src\include\LimitedStreams.h" />
+    <ClInclude Include="..\7zip-extension-src\include\MethodId.h" />
+    <ClInclude Include="..\7zip-extension-src\include\MyBuffer.h" />
+    <ClInclude Include="..\7zip-extension-src\include\MyCom.h" />
+    <ClInclude Include="..\7zip-extension-src\include\MyGuidDef.h" />
+    <ClInclude Include="..\7zip-extension-src\include\MyString.h" />
+    <ClInclude Include="..\7zip-extension-src\include\MyTypes.h" />
+    <ClInclude Include="..\7zip-extension-src\include\MyUnknown.h" />
+    <ClInclude Include="..\7zip-extension-src\include\MyVector.h" />
+    <ClInclude Include="..\7zip-extension-src\include\MyWindows.h" />
+    <ClInclude Include="..\7zip-extension-src\include\ProgressUtils.h" />
+    <ClInclude Include="..\7zip-extension-src\include\PropID.h" />
+    <ClInclude Include="..\7zip-extension-src\include\PropVariant.h" />
+    <ClInclude Include="..\7zip-extension-src\include\RegisterArc.h" />
+    <ClInclude Include="..\7zip-extension-src\include\RegisterCodec.h" />
+    <ClInclude Include="..\7zip-extension-src\include\StreamUtils.h" />
+    <ClInclude Include="..\7zip-extension-src\include\StringConvert.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\7zip-extension-src\Archive.def" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="CustomClean" AfterTargets="Clean">
+    <Exec Command="del &quot;C:\Program Files\7-Zip\Formats\$(TargetName).dll&quot;" IgnoreExitCode="true" />
+  </Target>
+</Project>
