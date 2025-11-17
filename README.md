@@ -24,10 +24,6 @@
    ```bash
    git clone https://github.com/DevX-Cipher/7zip-plugin.git
    ```
-
-3. **Copy the plugin files** to the 7-Zip plugins directory:
-   - The typical path for the plugins directory is `C:\Program Files\7-Zip\Formats`. Place the files in this directory.
-
 ## Usage
 
 After installation, you can unpack a plugin archive directly through the 7-Zip file manager:
