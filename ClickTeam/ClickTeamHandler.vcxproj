@@ -42,7 +42,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v143</PlatformToolset>
+    <PlatformToolset>v145</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -181,7 +181,7 @@
     <ClCompile Include="..\7zip-extension-src\src\ArchiveExports.cpp" />
     <ClCompile Include="..\7zip-extension-src\src\CopyCoder.cpp" />
     <ClCompile Include="..\7zip-extension-src\src\DllExports2.cpp" />
-    <ClCompile Include="src\Handler.cpp" />
+    <ClCompile Include="src\ClickTeamInstallerHandler.cpp" />
     <ClCompile Include="..\7zip-extension-src\src\IntToString.cpp" />
     <ClCompile Include="..\7zip-extension-src\src\LimitedStreams.cpp" />
     <ClCompile Include="..\7zip-extension-src\src\MyString.cpp" />
