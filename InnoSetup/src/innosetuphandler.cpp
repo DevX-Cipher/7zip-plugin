@@ -38,7 +38,12 @@ STDMETHODIMP CHandler::Open(IInStream* inStream, const UInt64* maxCheckStartPosi
 	{
 		Close();
 
-		RINOK(innoHandler.Open(inStream, maxCheckStartPosition, callback));
+		HRESULT hrOpen = innoHandler.Open(inStream, maxCheckStartPosition, callback);
+		if (hrOpen != S_OK)
+		{
+			Close();
+			return S_FALSE;
+		}
 
 		mainStream = inStream;
 
@@ -275,21 +280,40 @@ STDMETHODIMP CHandler::GetStream(UInt32 index, ISequentialInStream** stream)
 
 API_FUNC_IsArc IsArc_InnoSetup(const Byte* p, size_t size)
 {
-	(void)p;
 
 	if (size < 64)
+	{
 		return k_IsArc_Res_NEED_MORE;
+	}
 
-	return k_IsArc_Res_YES;
+	static const char* apszSignatures[] = { "Inno Setup Setup Data", "Inno Setup: Setup Data" };
+
+	for (const char* pszSig : apszSignatures)
+	{
+		size_t nSigLen = strlen(pszSig);
+		if (nSigLen == 0 || nSigLen > size)
+			continue;
+
+		const Byte* pEnd = p + (size - nSigLen);
+		for (const Byte* pScan = p; pScan <= pEnd; pScan++)
+		{
+			if (memcmp(pScan, pszSig, nSigLen) == 0)
+			{
+				return k_IsArc_Res_YES;
+			}
+		}
+	}
+
+	return k_IsArc_Res_NO;
 }
 
-static constexpr const Byte k_Signature[] = { 0 };
+static constexpr const Byte k_Signature[] = { 'I', 'n', 'n', 'o' };
 
 REGISTER_ARC_I(
 	"InnoSetup", "exe", 0, 0xAC,
 	k_Signature,
 	0,
-	0,
+	NArcInfoFlags::kFindSignature | NArcInfoFlags::kPureStartOpen,
 	IsArc_InnoSetup,
 	0
 )

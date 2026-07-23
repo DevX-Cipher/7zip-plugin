@@ -10,25 +10,38 @@
 
 #include "IArchive.h"
 #include "MyCom.h"
-
+#include <chrono>
 #include "lzmadecoder.h"  
+
+namespace {
+	inline void DbgLog(const char* fmt, ...)
+	{
+		char buf[512];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		OutputDebugStringA(buf);
+	}
+}
+
 
 class InnoSetupInstallerHandler {
 public:
 	struct FileInfo {
-		std::string path;                    
+		std::string path;
 		uint64_t uncompressedSize = 0;
-		uint64_t compressedSize = 0;          
-		std::string sha256Hex;               
+		uint64_t compressedSize = 0;
+		std::string sha256Hex;
 		std::vector<uint8_t> decompressedData;
 
 		bool hasChunkData = false;
-		UInt64 chunkFileOffset = 0;          
-		int64_t chunkStreamCompressedSize = 0; 
-		int64_t chunkSubOffset = 0;         
+		UInt64 chunkFileOffset = 0;
+		int64_t chunkStreamCompressedSize = 0;
+		int64_t chunkSubOffset = 0;
 	};
 
-	std::string version;                     
+	std::string version;
 	std::vector<FileInfo> items;
 
 	HRESULT Open(IInStream* stream, const UInt64* maxCheckStartPosition, IArchiveOpenCallback* callback);
@@ -85,7 +98,7 @@ private:
 		std::vector<int32_t> entryIndices;
 	};
 
-	InternalInfo Analyse(); 
+	InternalInfo Analyse();
 
 	OffsetTable FindOffsetTable();                                           // _findOffsetTable
 	std::vector<char> StripCRCChunks(const std::vector<char>& data);         // _stripCRCChunks
@@ -187,15 +200,24 @@ int64_t InnoSetupInstallerHandler::FindByteArray(UInt64 offset, UInt64 size, con
 {
 	if (!m_stream || patternSize == 0) return -1;
 
-	const UInt64 chunkSize = 1 << 24; 
+	const UInt64 chunkSize = 1 << 24;
 	UInt64 overlap = (patternSize > 0) ? (UInt64)(patternSize - 1) : 0;
 	UInt64 pos = offset;
 	UInt64 end = offset + size;
 
+
+	int32_t nIterations = 0;
+
 	while (pos < end) {
+		nIterations++;
+		if ((nIterations % 4) == 0) {
+		}
+
 		UInt64 readSize = std::min<UInt64>(chunkSize, end - pos);
 		std::vector<char> data;
-		if (!ReadArray(pos, readSize, data) || data.empty()) break;
+		if (!ReadArray(pos, readSize, data) || data.empty()) {
+			break;
+		}
 
 		if (data.size() >= patternSize) {
 			auto it = std::search(data.begin(), data.end(), (const char*)pattern, (const char*)pattern + patternSize);
@@ -204,11 +226,14 @@ int64_t InnoSetupInstallerHandler::FindByteArray(UInt64 offset, UInt64 size, con
 			}
 		}
 
-		if (data.size() < readSize) break;  // EOF
-		pos += readSize - overlap;
-		if (overlap == 0) pos += 1;
-	}
+		if (data.size() < readSize) {
+			break;
+		}
 
+		UInt64 nAdvance = (readSize > overlap) ? (readSize - overlap) : readSize;
+		if (nAdvance == 0) nAdvance = 1;
+		pos += nAdvance;
+	}
 	return -1;
 }
 
@@ -225,11 +250,8 @@ InnoSetupInstallerHandler::InternalInfo InnoSetupInstallerHandler::Analyse()
 
 	for (int32_t i = 0; (i < nSignatureCount) && (!result.isValid); i++) {
 		std::string sSignature = apszSignatures[i];
-		int64_t nOffset = FindUtf8String(0, nFirstPassSize, sSignature);
 
-		if ((nOffset == -1) && (nFirstPassSize < nFileSize)) {
-			nOffset = FindUtf8String(0, nFileSize, sSignature);
-		}
+		int64_t nOffset = FindUtf8String(0, nFirstPassSize, sSignature);
 
 		if (nOffset != -1) {
 			result.isValid = true;
@@ -269,7 +291,7 @@ InnoSetupInstallerHandler::InternalInfo InnoSetupInstallerHandler::Analyse()
 						result.version = sVersionCandidate;
 					}
 				}
-			
+
 
 				if (result.version.empty()) {
 					size_t nSignaturePos = sWindow.find(sSignature);
@@ -310,25 +332,63 @@ InnoSetupInstallerHandler::OffsetTable InnoSetupInstallerHandler::FindOffsetTabl
 
 	int64_t nTableOffset = FindByteArray(0, nFirstPassSize, g_aRDlPtSMagic, g_nRDlPtSMagicSize);
 
-	if ((nTableOffset == -1) && (nFirstPassSize < nFileSize)) {
-		nTableOffset = FindByteArray(0, nFileSize, g_aRDlPtSMagic, g_nRDlPtSMagicSize);
-	}
-
 	if (nTableOffset == -1) {
 		return result;
 	}
 
 	UInt64 nDataOffset = (UInt64)nTableOffset + g_nRDlPtSMagicSize;
 
-	if (nDataOffset + 40 > nFileSize) {
+	if (nDataOffset + 52 > nFileSize) {
 		return result;
 	}
 
 	result.tableOffset = (UInt64)nTableOffset;
 	result.revision = ReadU32LE(nDataOffset + 0);
-	result.headerOffset = ReadU32LE(nDataOffset + 20);  
-	result.dataOffset = ReadU32LE(nDataOffset + 24);    
+
+	UInt64 nSizeForCheck = GetSize();
+
+	uint32_t nHeaderOffsetOld = ReadU32LE(nDataOffset + 20);
+	uint32_t nDataOffsetOld = ReadU32LE(nDataOffset + 24);
+	uint64_t nHeaderOffsetNew = ReadU64LE(nDataOffset + 28);
+	uint64_t nDataOffsetNew = ReadU64LE(nDataOffset + 36);
+
+	DbgLog("[InnoSetup]   FindOffsetTable DEBUG: headerOld=0x%X dataOld=0x%X headerNew=0x%llX dataNew=0x%llX revision=%u fileSize=0x%llX\n",
+		nHeaderOffsetOld, nDataOffsetOld,
+		(unsigned long long)nHeaderOffsetNew, (unsigned long long)nDataOffsetNew,
+		result.revision, (unsigned long long)nSizeForCheck);
+
+	if (result.revision >= 2) {
+		result.headerOffset = (uint32_t)nHeaderOffsetNew;
+		result.dataOffset = (uint32_t)nDataOffsetNew;
+		DbgLog("[InnoSetup]   FindOffsetTable: revision=%u -> using 64-bit Offset0/Offset1 layout\n", result.revision);
+	}
+	else {
+		result.headerOffset = nHeaderOffsetOld;
+		result.dataOffset = nDataOffsetOld;
+		DbgLog("[InnoSetup]   FindOffsetTable: revision=%u -> using 32-bit legacy layout\n", result.revision);
+	}
 	result.isValid = true;
+
+	DbgLog("[InnoSetup]   FindOffsetTable: tableOffset=0x%llX revision=%u headerOffset=0x%X dataOffset=0x%X fileSize=0x%llX\n",
+		(unsigned long long)result.tableOffset, result.revision, result.headerOffset, result.dataOffset,
+		(unsigned long long)GetSize());
+
+	{
+		std::vector<char> baRaw;
+		if (ReadArray(nDataOffset, 52, baRaw) && baRaw.size() == 52) {
+			char hexBuf[3 * 52 + 1];
+			hexBuf[0] = 0;
+			for (int i = 0; i < 52; i++) {
+				char tmp[4];
+				snprintf(tmp, sizeof(tmp), "%02X ", (uint8_t)baRaw[i]);
+				strcat_s(hexBuf, tmp);
+			}
+			DbgLog("[InnoSetup]   raw table bytes (52): %s\n", hexBuf);
+		}
+		else {
+			DbgLog("[InnoSetup]   raw table dump FAILED, got %zu bytes (wanted 52)\n", baRaw.size());
+		}
+	}
 
 	return result;
 }
@@ -363,18 +423,28 @@ std::vector<char> InnoSetupInstallerHandler::DecompressLZMA1(const std::vector<c
 		return std::vector<char>();
 	}
 
-	std::vector<uint8_t> baInput;
-	baInput.reserve(13 + baData.size() - 5);
-	baInput.insert(baInput.end(), baData.begin(), baData.begin() + 5);   
-	baInput.insert(baInput.end(), 8, 0xFF);                              
-	baInput.insert(baInput.end(), baData.begin() + 5, baData.end());     
+	uint32_t nDictSize = (uint8_t)baData[1] | ((uint32_t)(uint8_t)baData[2] << 8)
+		| ((uint32_t)(uint8_t)baData[3] << 16) | ((uint32_t)(uint8_t)baData[4] << 24);
+	bool bIsLzma1 = (nDictSize > 0) && (nDictSize <= 0x10000000);
 
 	LZMAByteVector out;
 	memset(&out, 0, sizeof(out));
 
 	const size_t nMaxOutput = (size_t)256 * 1024 * 1024;
+	int status = -1;
 
-	int status = lzma_decompress(baInput.data(), baInput.size(), &out, nMaxOutput);
+	if (bIsLzma1) {
+		std::vector<uint8_t> baInput;
+		baInput.reserve(13 + baData.size() - 5);
+		baInput.insert(baInput.end(), baData.begin(), baData.begin() + 5);
+		baInput.insert(baInput.end(), 8, 0xFF);
+		baInput.insert(baInput.end(), baData.begin() + 5, baData.end());
+
+		status = lzma_decompress(baInput.data(), baInput.size(), &out, nMaxOutput);
+	}
+	else {
+		status = lzma2_decompress((const uint8_t*)baData.data(), baData.size(), &out, nMaxOutput);
+	}
 
 	std::vector<char> result;
 	if (status == 0 && out.data && out.length > 0) {
@@ -389,23 +459,71 @@ std::vector<char> InnoSetupInstallerHandler::ReadBlockStream(UInt64 offset, UInt
 {
 	UInt64 nFileSize = GetSize();
 
-	if (offset + 9 > nFileSize) {
+	{
+		std::vector<char> baDump;
+		if (ReadArray(offset, 16, baDump) && baDump.size() == 16) {
+			char hexBuf[3 * 16 + 1];
+			hexBuf[0] = 0;
+			for (int i = 0; i < 16; i++) {
+				char tmp[4];
+				snprintf(tmp, sizeof(tmp), "%02X ", (uint8_t)baDump[i]);
+				strcat_s(hexBuf, tmp);
+			}
+			DbgLog("[InnoSetup]     ReadBlockStream @0x%llX raw16: %s\n", (unsigned long long)offset, hexBuf);
+		}
+		else {
+			DbgLog("[InnoSetup]     ReadBlockStream @0x%llX: failed to read 16 bytes for dump\n", (unsigned long long)offset);
+		}
+	}
+
+	uint64_t nStoredSize = 0;
+	uint8_t nCompressedFlag = 0;
+	UInt64 nHeaderSize = 0;
+
+	if (offset + 13 <= nFileSize) {
+		uint64_t nTryStoredSize = ReadU64LE(offset + 4);
+		uint8_t nTryFlag = ReadU8(offset + 12);
+		bool bNewLooksSane = (nTryFlag == 0 || nTryFlag == 1)
+			&& (offset + 13 + nTryStoredSize <= nFileSize);
+		if (bNewLooksSane) {
+			nStoredSize = nTryStoredSize;
+			nCompressedFlag = nTryFlag;
+			nHeaderSize = 13;
+		}
+	}
+
+	if (nHeaderSize == 0 && offset + 9 <= nFileSize) {
+		uint32_t nTryStoredSize32 = ReadU32LE(offset + 4);
+		uint8_t nTryFlag = ReadU8(offset + 8);
+		bool bOldLooksSane = (nTryFlag == 0 || nTryFlag == 1)
+			&& (offset + 9 + (UInt64)nTryStoredSize32 <= nFileSize);
+		if (bOldLooksSane) {
+			nStoredSize = nTryStoredSize32;
+			nCompressedFlag = nTryFlag;
+			nHeaderSize = 9;
+		}
+	}
+
+	if (nHeaderSize == 0) {
+		DbgLog("[InnoSetup]     ReadBlockStream @0x%llX: neither old(9) nor new(13) header format looked sane -- ABORT\n",
+			(unsigned long long)offset);
 		if (consumed) *consumed = 0;
 		return std::vector<char>();
 	}
 
-	uint32_t nStoredSize = ReadU32LE(offset + 4);
-	uint8_t nCompressedFlag = ReadU8(offset + 8);
+	UInt64 nConsumed = nHeaderSize + nStoredSize;
 
-	UInt64 nConsumed = 9 + (UInt64)nStoredSize;
+	DbgLog("[InnoSetup]     ReadBlockStream @0x%llX: headerSize=%llu storedSize=%llu compressedFlag=%u consumed=%llu (fileSize=0x%llX)\n",
+		(unsigned long long)offset, (unsigned long long)nHeaderSize, (unsigned long long)nStoredSize, nCompressedFlag, (unsigned long long)nConsumed, (unsigned long long)nFileSize);
 
 	if (offset + nConsumed > nFileSize) {
+		DbgLog("[InnoSetup]     ReadBlockStream @0x%llX: offset+consumed (0x%llX) exceeds fileSize -- ABORT\n",
+			(unsigned long long)offset, (unsigned long long)(offset + nConsumed));
 		if (consumed) *consumed = 0;
 		return std::vector<char>();
 	}
-
 	std::vector<char> baStoredData;
-	ReadArray(offset + 9, nStoredSize, baStoredData);
+	ReadArray(offset + nHeaderSize, (UInt64)nStoredSize, baStoredData);
 
 	std::vector<char> baPayload = StripCRCChunks(baStoredData);
 
@@ -484,11 +602,13 @@ std::vector<InnoSetupInstallerHandler::DataEntry> InnoSetupInstallerHandler::Par
 		return (uint8_t)p[0] | ((uint32_t)(uint8_t)p[1] << 8) | ((uint32_t)(uint8_t)p[2] << 16) | ((uint32_t)(uint8_t)p[3] << 24);
 		};
 
-	const int32_t nMinEntrySize = 68;
+	const int32_t nCandidateFieldBases[] = { 12, 16 };
+	const int32_t nMinEntrySize = 68;  
 	const int32_t nMaxEntrySize = 128;
-	const int64_t nSaneMaxSize = (int64_t)1 << 40; 
+	const int64_t nSaneMaxSize = (int64_t)1 << 40;
 
 	int32_t nBestEntrySize = 0;
+	int32_t nBestFieldBase = 0;
 	int32_t nBestSaneCount = -1;
 
 	for (int32_t nCandidateSize = nMinEntrySize; nCandidateSize <= nMaxEntrySize; nCandidateSize++) {
@@ -497,30 +617,36 @@ std::vector<InnoSetupInstallerHandler::DataEntry> InnoSetupInstallerHandler::Par
 		int32_t nCandidateCount = nBlockSize / nCandidateSize;
 		if (nCandidateCount <= 0) continue;
 
-		int32_t nSaneCount = 0;
+		for (int32_t nFieldBase : nCandidateFieldBases) {
+			if (nFieldBase + 56 > nCandidateSize) continue;
 
-		for (int32_t i = 0; i < nCandidateCount; i++) {
-			const char* pEntry = baBlock2.data() + (i * nCandidateSize);
+			int32_t nSaneCount = 0;
 
-			int64_t nChunkSubOffset = readLE64(pEntry + 12);
-			int64_t nOriginalSize = readLE64(pEntry + 20);
-			int64_t nChunkCompressedSize = readLE64(pEntry + 28);
+			for (int32_t i = 0; i < nCandidateCount; i++) {
+				const char* pEntry = baBlock2.data() + (i * nCandidateSize);
 
-			bool bSane = (nChunkSubOffset >= 0) && (nChunkSubOffset < nSaneMaxSize) && (nOriginalSize >= 0) &&
-				(nOriginalSize < nSaneMaxSize) && (nChunkCompressedSize >= 0) && (nChunkCompressedSize < nSaneMaxSize);
+				int64_t nChunkSubOffset = readLE64(pEntry + nFieldBase);
+				int64_t nOriginalSize = readLE64(pEntry + nFieldBase + 8);
+				int64_t nChunkCompressedSize = readLE64(pEntry + nFieldBase + 16);
 
-			if (bSane) nSaneCount++;
-		}
+				bool bSane = (nChunkSubOffset >= 0) && (nChunkSubOffset < nSaneMaxSize) && (nOriginalSize >= 0) &&
+					(nOriginalSize < nSaneMaxSize) && (nChunkCompressedSize >= 0) && (nChunkCompressedSize < nSaneMaxSize);
 
-		if (nSaneCount == nCandidateCount && nSaneCount > nBestSaneCount) {
-			nBestSaneCount = nSaneCount;
-			nBestEntrySize = nCandidateSize;
+				if (bSane) nSaneCount++;
+			}
+
+			if (nSaneCount == nCandidateCount && nSaneCount > nBestSaneCount) {
+				nBestSaneCount = nSaneCount;
+				nBestEntrySize = nCandidateSize;
+				nBestFieldBase = nFieldBase;
+			}
 		}
 	}
 
 	if (nBestEntrySize == 0) return listResult;
 
 	int32_t nEntrySize = nBestEntrySize;
+	int32_t nFieldBase = nBestFieldBase;
 	int32_t nNumEntries = nBlockSize / nEntrySize;
 
 	for (int32_t i = 0; i < nNumEntries; i++) {
@@ -528,10 +654,10 @@ std::vector<InnoSetupInstallerHandler::DataEntry> InnoSetupInstallerHandler::Par
 		const char* pEntry = baBlock2.data() + nBase;
 
 		DataEntry entry;
-		entry.chunkSubOffset = readLE64(pEntry + 12);
-		entry.originalSize = readLE64(pEntry + 20);
-		entry.chunkCompressedSize = readLE64(pEntry + 28);
-		entry.sha256.assign((const uint8_t*)pEntry + 36, (const uint8_t*)pEntry + 36 + 32);
+		entry.chunkSubOffset = readLE64(pEntry + nFieldBase);
+		entry.originalSize = readLE64(pEntry + nFieldBase + 8);
+		entry.chunkCompressedSize = readLE64(pEntry + nFieldBase + 16);
+		entry.sha256.assign((const uint8_t*)pEntry + nFieldBase + 24, (const uint8_t*)pEntry + nFieldBase + 24 + 32);
 
 		listResult.push_back(entry);
 	}
@@ -569,7 +695,7 @@ std::vector<InnoSetupInstallerHandler::FileEntry> InnoSetupInstallerHandler::Par
 				it = std::search(it, baBlock1.end(), needle.begin(), needle.end());
 				if (it == baBlock1.end()) break;
 				listPatternPositions.push_back((int32_t)std::distance(baBlock1.begin(), it));
-				++it;  
+				++it;
 			}
 			};
 
@@ -579,6 +705,7 @@ std::vector<InnoSetupInstallerHandler::FileEntry> InnoSetupInstallerHandler::Par
 		std::sort(listPatternPositions.begin(), listPatternPositions.end());
 	}
 
+	DbgLog("[InnoSetup]   ParseFileEntries: found %zu {app}/{tmp} pattern positions\n", listPatternPositions.size());
 	if (listPatternPositions.empty()) return listResult;
 
 	const int32_t nDefaultNumericSize = 39;
@@ -589,7 +716,11 @@ std::vector<InnoSetupInstallerHandler::FileEntry> InnoSetupInstallerHandler::Par
 
 	std::vector<int32_t> listTestedStarts;
 
+	const size_t nMaxCandidatesToTest = 2000;
+	size_t nCandidatesTested = 0;
+
 	for (size_t p = 0; p < listPatternPositions.size(); p++) {
+		if (nCandidatesTested >= nMaxCandidatesToTest) break;
 		int32_t nPatternPos = listPatternPositions[p];
 
 		int32_t nDestNameOff = -1;
@@ -616,6 +747,7 @@ std::vector<InnoSetupInstallerHandler::FileEntry> InnoSetupInstallerHandler::Par
 		}
 
 		listTestedStarts.push_back(nCandidateStart);
+		nCandidatesTested++;
 
 		int32_t nOff = nCandidateStart;
 		int32_t nStringCount = 0;
@@ -658,8 +790,9 @@ std::vector<InnoSetupInstallerHandler::FileEntry> InnoSetupInstallerHandler::Par
 
 		int32_t nScore = 0;
 		int32_t nTrialOff = nCandidateStart;
+		const int32_t nTrialCap = ((nNumFiles + 100) < 20000) ? (nNumFiles + 100) : 20000;
 
-		for (int32_t nTrial = 0; nTrial < nNumFiles + 100; nTrial++) {
+		for (int32_t nTrial = 0; nTrial < nTrialCap; nTrial++) {
 			if (nTrialOff + 4 > (int32_t)baBlock1.size()) break;
 
 			int32_t nTrialStrOff = nTrialOff;
@@ -688,10 +821,20 @@ std::vector<InnoSetupInstallerHandler::FileEntry> InnoSetupInstallerHandler::Par
 			nBestEntryStart = nCandidateStart;
 			nBestNumStrings = nStringCount;
 			nBestNumericSize = nProbeNumericSize;
+			DbgLog("[InnoSetup]   candidate %zu/%zu: new best score=%d strings=%d numericSize=%d\n",
+				p, listPatternPositions.size(), nBestScore, nBestNumStrings, nBestNumericSize);
+		}
+
+		if ((p % 200) == 0) {
+			DbgLog("[InnoSetup]   ...scanned %zu/%zu candidates so far, bestScore=%d\n",
+				p, listPatternPositions.size(), nBestScore);
 		}
 
 		if (nBestScore >= 10) break;
 	}
+
+	DbgLog("[InnoSetup]   ParseFileEntries: candidate scan finished, bestScore=%d bestStart=%d\n",
+		nBestScore, nBestEntryStart);
 
 	if (nBestEntryStart == -1) return listResult;
 
@@ -859,7 +1002,13 @@ std::vector<char> InnoSetupInstallerHandler::DecompressDataChunk(UInt64 nChunkOf
 
 bool InnoSetupInstallerHandler::ParseRealInnoSetup(UInt64 /*signatureOffset*/)
 {
+	auto t0 = std::chrono::steady_clock::now();
+	DbgLog("[InnoSetup] ParseRealInnoSetup: BEGIN, calling FindOffsetTable...\n");
+
 	OffsetTable offsetTable = FindOffsetTable();
+
+	DbgLog("[InnoSetup] FindOffsetTable done, isValid=%d headerOffset=0x%X dataOffset=0x%X\n",
+		offsetTable.isValid, offsetTable.headerOffset, offsetTable.dataOffset);
 
 	if (!offsetTable.isValid) {
 		std::fprintf(stderr, "[diag] offset table (rDlPtS) NOT FOUND\n");
@@ -871,6 +1020,8 @@ bool InnoSetupInstallerHandler::ParseRealInnoSetup(UInt64 /*signatureOffset*/)
 	UInt64 nFileSize = GetSize();
 
 	if ((nSetup0Offset >= nFileSize) || (nDataStreamOffset >= nFileSize)) {
+		DbgLog("[InnoSetup] ABORT: header/data offset OUT OF BOUNDS. headerOffset=0x%llX dataOffset=0x%llX fileSize=0x%llX\n",
+			(unsigned long long)nSetup0Offset, (unsigned long long)nDataStreamOffset, (unsigned long long)nFileSize);
 		std::fprintf(stderr, "[diag] header/data offset out of file bounds (fileSize=%llu)\n", (unsigned long long)nFileSize);
 		return false;
 	}
@@ -880,24 +1031,166 @@ bool InnoSetupInstallerHandler::ParseRealInnoSetup(UInt64 /*signatureOffset*/)
 		return false;
 	}
 
+	{
+		const int nDumpLen = 320;
+		std::vector<char> baIdDump;
+		if (ReadArray(nSetup0Offset, nDumpLen, baIdDump) && baIdDump.size() == (size_t)nDumpLen) {
+			std::string sAsText;
+			sAsText.reserve(nDumpLen);
+			for (int i = 0; i < nDumpLen; i++) {
+				unsigned char c = (unsigned char)baIdDump[i];
+				sAsText.push_back((c >= 32 && c < 127) ? (char)c : '.');
+			}
+			DbgLog("[InnoSetup]   setup0 @0x%llX first %d bytes as text: %s\n",
+				(unsigned long long)nSetup0Offset, nDumpLen, sAsText.c_str());
+
+			std::vector<char> hexBuf(3 * nDumpLen + 1, 0);
+			for (int i = 0; i < nDumpLen; i++) {
+				char tmp[4];
+				snprintf(tmp, sizeof(tmp), "%02X ", (uint8_t)baIdDump[i]);
+				strcat_s(hexBuf.data(), hexBuf.size(), tmp);
+			}
+			DbgLog("[InnoSetup]   setup0 @0x%llX first %d bytes hex: %s\n",
+				(unsigned long long)nSetup0Offset, nDumpLen, hexBuf.data());
+
+			for (int i = 0; i + 9 <= nDumpLen; i++) {
+				uint32_t storedSize = (uint8_t)baIdDump[i + 4] | ((uint32_t)(uint8_t)baIdDump[i + 5] << 8)
+					| ((uint32_t)(uint8_t)baIdDump[i + 6] << 16) | ((uint32_t)(uint8_t)baIdDump[i + 7] << 24);
+				uint8_t flag = (uint8_t)baIdDump[i + 8];
+				if (storedSize > 100 && storedSize < 10 * 1024 * 1024 && (flag == 0 || flag == 1)) {
+					DbgLog("[InnoSetup]     candidate block header @ +%d (0x%X from setup0): storedSize=%u flag=%u\n",
+						i, i, storedSize, flag);
+				}
+			}
+		}
+	}
+
 	UInt64 nBlock1Offset = nSetup0Offset + 64;
 	UInt64 nBlock1Consumed = 0;
-	std::vector<char> baBlock1 = ReadBlockStream(nBlock1Offset, &nBlock1Consumed);
+	std::vector<char> baBlock1;
+	{
+		DbgLog("[InnoSetup]   --- probing candidate block1 offsets (byte-by-byte, real attempt) ---\n");
+
+		const int64_t nSearchStart = 20;   
+		const int64_t nSearchEnd = 65536;   
+
+		int nLoggedCandidates = 0;
+		const int nMaxLogCandidates = 60; 
+
+		for (int64_t nDelta = nSearchStart; nDelta <= nSearchEnd; nDelta++) {
+			UInt64 nCandidate = nSetup0Offset + (UInt64)nDelta;
+			if (nCandidate + 9 > nFileSize) break;
+
+			uint64_t nCandStoredSizeNew = ReadU64LE(nCandidate + 4);
+			uint8_t nCandFlagNew = ReadU8(nCandidate + 12);
+			bool bWorthTryingNew = (nCandStoredSizeNew > 0)
+				&& (nCandidate + 13 + nCandStoredSizeNew <= nFileSize)
+				&& (nCandFlagNew == 0 || nCandFlagNew == 1);
+
+			uint32_t nCandStoredSizeOld = ReadU32LE(nCandidate + 4);
+			uint8_t nCandFlagOld = ReadU8(nCandidate + 8);
+			bool bWorthTryingOld = (nCandStoredSizeOld > 0)
+				&& (nCandidate + 9 + (UInt64)nCandStoredSizeOld <= nFileSize)
+				&& (nCandFlagOld == 0 || nCandFlagOld == 1);
+
+			uint64_t nCandStoredSize = bWorthTryingNew ? nCandStoredSizeNew : nCandStoredSizeOld;
+			uint8_t nCandFlag = bWorthTryingNew ? nCandFlagNew : nCandFlagOld;
+			bool bWorthTrying = bWorthTryingNew || bWorthTryingOld;
+
+			if (!bWorthTrying) continue;
+
+			if (nLoggedCandidates < nMaxLogCandidates) {
+				DbgLog("[InnoSetup]     raw candidate +%lld (0x%llX): storedSize=%u flag=%u\n",
+					(long long)nDelta, (unsigned long long)nCandidate, nCandStoredSize, nCandFlag);
+				nLoggedCandidates++;
+			}
+
+			UInt64 nTryConsumed = 0;
+			std::vector<char> baTry = ReadBlockStream(nCandidate, &nTryConsumed);
+
+			if (baTry.empty() && nCandStoredSize > 100000) {
+				std::vector<char> baExtra;
+				if (ReadArray(nCandidate + 9, 32, baExtra) && baExtra.size() == 32) {
+					std::string hexBuf;
+					char tmp[4];
+					for (unsigned char c : baExtra) {
+						snprintf(tmp, sizeof(tmp), "%02X ", c);
+						hexBuf += tmp;
+					}
+					DbgLog("[InnoSetup]     FAILED candidate +%lld extra 32 raw bytes (post header, pre-strip): %s\n",
+						(long long)nDelta, hexBuf.c_str());
+				}
+			}
+
+			if (!baTry.empty()) {
+				bool bLooksLikeHeader = false;
+				if (baTry.size() >= 8) {
+					uint32_t nFirstStrLen = (uint8_t)baTry[0] | ((uint32_t)(uint8_t)baTry[1] << 8)
+						| ((uint32_t)(uint8_t)baTry[2] << 16) | ((uint32_t)(uint8_t)baTry[3] << 24);
+					bLooksLikeHeader = (nFirstStrLen > 0) && (nFirstStrLen < 512)
+						&& (4 + nFirstStrLen + 4 <= baTry.size());
+				}
+
+				bool bPlausibleSize = baTry.size() >= 512;
+
+				DbgLog("[InnoSetup]     candidate +%lld (0x%llX): storedSize=%u flag=%u -> decompressed size=%zu looksLikeHeader=%d plausibleSize=%d\n",
+					(long long)nDelta, (unsigned long long)nCandidate, nCandStoredSize, nCandFlag, baTry.size(),
+					bLooksLikeHeader, bPlausibleSize);
+
+				if (bLooksLikeHeader && bPlausibleSize && baBlock1.empty()) {
+					nBlock1Offset = nCandidate;
+					nBlock1Consumed = nTryConsumed;
+					baBlock1 = std::move(baTry);
+					DbgLog("[InnoSetup]     ^ ACCEPTED as real block1 (delta=%lld)\n", (long long)nDelta);
+					break;
+				}
+			}
+		}
+		DbgLog("[InnoSetup]   --- end probe ---\n");
+	}
+
+	if (baBlock1.empty()) {
+		DbgLog("[InnoSetup] Reading block stream 1 at default 0x%llX (probe found nothing)...\n", (unsigned long long)nBlock1Offset);
+		baBlock1 = ReadBlockStream(nBlock1Offset, &nBlock1Consumed);
+	}
+
+	DbgLog("[InnoSetup] block1 size=%zu consumed=%llu (%.2fs elapsed)\n",
+		baBlock1.size(), (unsigned long long)nBlock1Consumed,
+		std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 	if (baBlock1.empty()) {
 		std::fprintf(stderr, "[diag] block stream 1 (at 0x%llx) came back EMPTY\n", (unsigned long long)nBlock1Offset);
 		return false;
 	}
 
-	// Block Stream 2 (data entries)
 	UInt64 nBlock2Offset = nBlock1Offset + nBlock1Consumed;
 	UInt64 nBlock2Consumed = 0;
+	DbgLog("[InnoSetup] Reading block stream 2 at 0x%llX...\n", (unsigned long long)nBlock2Offset);
 	std::vector<char> baBlock2 = ReadBlockStream(nBlock2Offset, &nBlock2Consumed);
+	DbgLog("[InnoSetup] block2 size=%zu consumed=%llu (%.2fs elapsed)\n",
+		baBlock2.size(), (unsigned long long)nBlock2Consumed,
+		std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 	if (baBlock2.empty()) {
 		std::fprintf(stderr, "[diag] block stream 2 (at 0x%llx) came back EMPTY\n", (unsigned long long)nBlock2Offset);
 		return false;
 	}
 
+	{
+		size_t nDumpLen = baBlock2.size() < 220 ? baBlock2.size() : 220;
+		std::string hexBuf;
+		hexBuf.reserve(nDumpLen * 3);
+		char tmp[4];
+		for (size_t i = 0; i < nDumpLen; i++) {
+			snprintf(tmp, sizeof(tmp), "%02X ", (uint8_t)baBlock2[i]);
+			hexBuf += tmp;
+		}
+		DbgLog("[InnoSetup]   block2 first %zu bytes hex: %s\n", nDumpLen, hexBuf.c_str());
+	}
+
+	DbgLog("[InnoSetup] Calling ParseDataEntries (block2 size=%zu)...\n", baBlock2.size());
 	std::vector<DataEntry> listDataEntries = ParseDataEntries(baBlock2);
+	DbgLog("[InnoSetup] ParseDataEntries done: %zu entries (%.2fs elapsed)\n",
+		listDataEntries.size(),
+		std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 	if (listDataEntries.empty()) {
 		std::fprintf(stderr, "[diag] ParseDataEntries produced 0 entries (block2 size=%zu)\n", baBlock2.size());
 		return false;
@@ -905,7 +1198,12 @@ bool InnoSetupInstallerHandler::ParseRealInnoSetup(UInt64 /*signatureOffset*/)
 
 	int32_t nNumDataEntries = (int32_t)listDataEntries.size();
 
+	DbgLog("[InnoSetup] Calling ParseFileEntries (numDataEntries=%d, block1 size=%zu)...\n",
+		nNumDataEntries, baBlock1.size());
 	std::vector<FileEntry> listFileEntries = ParseFileEntries(baBlock1, nNumDataEntries);
+	DbgLog("[InnoSetup] ParseFileEntries done: %zu entries (%.2fs elapsed)\n",
+		listFileEntries.size(),
+		std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count());
 	if (listFileEntries.empty()) {
 		std::fprintf(stderr, "[diag] ParseFileEntries produced 0 entries (no {app}/{tmp} pattern matched?)\n");
 		return false;
@@ -983,7 +1281,7 @@ bool InnoSetupInstallerHandler::ParseRealInnoSetup(UInt64 /*signatureOffset*/)
 		info.hasChunkData = true;
 		info.chunkFileOffset = mapEntryChunkFileOffset.count(nLocIdx) ? mapEntryChunkFileOffset[nLocIdx] : 0;
 		info.chunkStreamCompressedSize =
-			(mapEntryChunkCompressedSize.count(nLocIdx) ? mapEntryChunkCompressedSize[nLocIdx] : 0) + 4; 
+			(mapEntryChunkCompressedSize.count(nLocIdx) ? mapEntryChunkCompressedSize[nLocIdx] : 0) + 4;
 		info.chunkSubOffset = dataEntry.chunkSubOffset;
 
 		items.push_back(std::move(info));
@@ -1022,7 +1320,7 @@ bool InnoSetupInstallerHandler::ParseSyntheticFileEntries(UInt64 signatureOffset
 	nOffset += 4;
 
 	if (nOffset + 8 > nFileSize) return false;
-	nOffset += 8; 
+	nOffset += 8;
 
 	for (uint32_t i = 0; i < nNumberOfFiles; i++) {
 		if (nOffset + 2 > nFileSize) break;
@@ -1044,12 +1342,12 @@ bool InnoSetupInstallerHandler::ParseSyntheticFileEntries(UInt64 signatureOffset
 		nOffset += 8;
 
 		if (nOffset + 4 > nFileSize) break;
-		nOffset += 4;  
+		nOffset += 4;
 
 		FileInfo info;
 		info.path = sFileName;
 		info.uncompressedSize = nDataSize;
-		info.compressedSize = nDataSize;  
+		info.compressedSize = nDataSize;
 
 		if (nDataSize > 0) {
 			std::vector<char> baFileData;
@@ -1073,7 +1371,7 @@ const std::vector<uint8_t>* InnoSetupInstallerHandler::GetFileData(size_t index)
 		return &info.decompressedData;
 	}
 
-	if (!info.hasChunkData) return &info.decompressedData;  
+	if (!info.hasChunkData) return &info.decompressedData;
 
 	auto cacheIt = m_chunkCache.find(info.chunkFileOffset);
 	if (cacheIt == m_chunkCache.end()) {
@@ -1110,9 +1408,15 @@ HRESULT InnoSetupInstallerHandler::Open(IInStream* stream, const UInt64* /*maxCh
 	m_stream = stream;
 	m_fileSize = 0;
 
+	DbgLog("[InnoSetup] InnoSetupInstallerHandler::Open CALLED, calling Analyse()...\n");
+
 	InternalInfo info = Analyse();
 
+	DbgLog("[InnoSetup] Analyse() returned isValid=%d signatureOffset=0x%llX version='%s'\n",
+		info.isValid, (unsigned long long)info.signatureOffset, info.version.c_str());
+
 	if (!info.isValid) {
+		DbgLog("[InnoSetup] Analyse() FAILED -- returning S_FALSE from Open()\n");
 		Close();
 		return S_FALSE;
 	}
