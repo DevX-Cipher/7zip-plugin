@@ -42,7 +42,6 @@ STDMETHODIMP CHandler::Open(IInStream* inStream, const UInt64* maxCheckStartPosi
 
 		mainStream = inStream;
 
-		// Calculate total size
 		UInt64 s = 0;
 		for (size_t i = 0; i < innoHandler.items.size(); i++)
 		{
@@ -99,7 +98,6 @@ STDMETHODIMP CHandler::GetArchiveProperty(PROPID propID, PROPVARIANT* value) MY_
 		prop = totalSize;
 		break;
 	case kpidHeadersSize:
-		// Could calculate from InnoSetup header if needed
 		break;
 	}
 	prop.Detach(value);
@@ -207,7 +205,6 @@ STDMETHODIMP CHandler::Extract(const UInt32* indices, UInt32 numItems, Int32 tes
 
 		Int32 opRes = NArchive::NExtract::NOperationResult::kOK;
 
-		// Decompress on demand (cached per-chunk) and write it out
 		const std::vector<uint8_t>* pData = innoHandler.GetFileData(index);
 
 		if (realOutStream)
@@ -261,10 +258,8 @@ STDMETHODIMP CHandler::GetStream(UInt32 index, ISequentialInStream** stream)
 		return S_OK;
 	}
 
-	// we can use CLimitedCachedInStream with everything cached
 	CMyComPtr<CLimitedCachedInStream> limitedStream = new CLimitedCachedInStream;
 
-	// Set the main stream (even though we won't read from it since everything is cached)
 	limitedStream->SetStream(mainStream, 0);
 
 	auto& preload = limitedStream->Buffer;
@@ -278,14 +273,6 @@ STDMETHODIMP CHandler::GetStream(UInt32 index, ISequentialInStream** stream)
 	return S_OK;
 }
 
-
-// Unlike ClickTeam's fixed 6-byte magic at a known offset, InnoSetup's
-// "Inno Setup Setup Data" / "Inno Setup: Setup Data" signature string sits
-// at a variable offset inside the host PE (it can be MBs in). IsArc only
-// ever sees a small bounded prefix of the file, so it cannot reliably do
-// this scan itself -- it defers to Open(), which already performs the real
-// signature search (InnoSetupInstallerHandler::Analyse) across the whole
-// stream and correctly returns S_FALSE if nothing is found.
 API_FUNC_IsArc IsArc_InnoSetup(const Byte* p, size_t size)
 {
 	(void)p;
@@ -296,12 +283,6 @@ API_FUNC_IsArc IsArc_InnoSetup(const Byte* p, size_t size)
 	return k_IsArc_Res_YES;
 }
 
-// REGISTER_ARC_I's signature slot expects a real named Byte array (like
-// ClickTeam's k_Signature) so its internal ARRAY_SIZE-style macro can
-// resolve the array type -- a bare brace-init { 0 } does not decay
-// correctly there. This format has no fixed-offset signature to match on
-// (see IsArc_InnoSetup above), so this is just a 1-byte placeholder; it is
-// never used for matching since IsArc_InnoSetup ignores `p` entirely.
 static constexpr const Byte k_Signature[] = { 0 };
 
 REGISTER_ARC_I(
