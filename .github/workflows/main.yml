@@ -27,25 +27,24 @@ jobs:
         run: |
           git fetch --tags
 
-          $latest = git tag --sort=-version:refname | Select-Object -First 1
+          $latest = git tag --sort=-version:refname |
+            Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } |
+            Select-Object -First 1
 
           if (-not $latest) {
             $newVersion = "v1.0.0"
           }
           else {
-            if ($latest -match '^v(\d+)\.(\d+)\.(\d+)$') {
-              $major = [int]$Matches[1]
-              $minor = [int]$Matches[2]
-              $patch = [int]$Matches[3] + 1
+            $parts = $latest.Substring(1).Split('.')
 
-              $newVersion = "v$major.$minor.$patch"
-            }
-            else {
-              throw "Invalid tag format: $latest"
-            }
+            $major = [int]$parts[0]
+            $minor = [int]$parts[1]
+            $patch = [int]$parts[2] + 1
+
+            $newVersion = "v$major.$minor.$patch"
           }
 
-          "version=$newVersion" >> $env:GITHUB_OUTPUT
+          echo "version=$newVersion" >> $env:GITHUB_OUTPUT
 
       - name: Create Tag
         shell: pwsh
@@ -53,15 +52,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git tag ${{ steps.version.outputs.version }}
-          git push origin ${{ steps.version.outputs.version }}
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
 
       - name: Build Solution
         shell: cmd
         run: |
           msbuild BuildAll.slnx /p:Configuration=Release /p:Platform=x64
 
-      - name: Verify Build Output
+      - name: Verify Output
         shell: pwsh
         run: |
           Get-ChildItem x64\Release\*.dll
