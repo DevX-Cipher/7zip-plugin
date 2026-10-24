@@ -168,7 +168,8 @@
       </Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>del /f /q "C:\Users\DevX-Cipher\Desktop\PSX_debug.log"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <!-- Source Files Inclusion -->
